@@ -157,43 +157,6 @@
   </button>
 </section>
 
-<!-- =========================== CARDÁPIO =========================== -->
-<section id="cardapio" class="relative bg-[#0f0d0c] px-5 sm:px-10 lg:px-[5vw] py-24">
-  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 reveal">
-    <div>
-      <p class="font-display text-xs font-bold uppercase tracking-[.3em] text-white/50 mb-3">Cardápio</p>
-      <h2 class="font-display font-extrabold text-4xl md:text-5xl tracking-tight">Escolha o seu favorito</h2>
-    </div>
-    <div id="filters" class="flex flex-wrap gap-2"></div>
-  </div>
-  <div id="menuGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
-</section>
-
-<!-- =========================== SOBRE =========================== -->
-<section id="sobre" class="relative bg-[#0f0d0c] px-5 sm:px-10 lg:px-[5vw] pb-24">
-  <div class="grid lg:grid-cols-2 gap-10 items-center rounded-[2rem] bg-white/[.04] border border-white/10 p-8 md:p-14 reveal">
-    <div>
-      <p class="font-display text-xs font-bold uppercase tracking-[.3em] text-white/50 mb-3">Sobre o Batal</p>
-      <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight leading-tight">Texto de apresentação<br>em breve.</h2>
-      <p class="mt-5 text-white/65 leading-relaxed max-w-lg">Espaço reservado para a história do restaurante. Este texto é provisório e será substituído pelas informações reais do Batal.</p>
-    </div>
-    <div id="catStats" class="grid grid-cols-2 gap-4"></div>
-  </div>
-</section>
-
-<!-- =========================== CONTATO / RODAPÉ =========================== -->
-<footer id="contato" class="relative bg-[#0f0d0c] px-5 sm:px-10 lg:px-[5vw] pb-10">
-  <div class="grid md:grid-cols-3 gap-4 reveal">
-    <div class="rounded-3xl bg-white/[.04] border border-white/10 p-6"><p class="text-xs uppercase tracking-[.25em] text-white/45">Endereço</p><p class="mt-2 font-display font-semibold">Em breve</p></div>
-    <div class="rounded-3xl bg-white/[.04] border border-white/10 p-6"><p class="text-xs uppercase tracking-[.25em] text-white/45">Horário</p><p class="mt-2 font-display font-semibold">Em breve</p></div>
-    <div class="rounded-3xl bg-white/[.04] border border-white/10 p-6"><p class="text-xs uppercase tracking-[.25em] text-white/45">Pedidos</p><p class="mt-2 font-display font-semibold">Em breve</p></div>
-  </div>
-  <div class="mt-14 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
-    <span class="font-display font-extrabold tracking-[.22em] text-white/70">BATAL</span>
-    <span>Site em desenvolvimento · preços e textos ilustrativos · © 2026 Batal</span>
-  </div>
-</footer>
-
 <!-- =========================== SACOLA =========================== -->
 <div id="bagOverlay" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none"></div>
 <aside id="bagPanel" class="fixed top-0 right-0 z-[70] h-full w-full max-w-sm bg-[#171412] border-l border-white/10 flex flex-col translate-x-full" aria-label="Sacola">
@@ -212,71 +175,20 @@
 
 <div id="toast" class="fixed z-[80] left-1/2 bottom-8 -translate-x-1/2 px-5 py-3 rounded-full bg-white text-stone-900 text-sm font-semibold shadow-2xl opacity-0 pointer-events-none"></div>
 
+<script src="dados.js"></script>
 <script>
 /* =====================================================================
-   PRATOS — edite aqui. Preços e textos são FICTÍCIOS (provisórios).
-   img: caminho dentro de /pratos/. Se o arquivo não existir, aparece
-   um placeholder com o nome do arquivo esperado.
+   PRATOS — vêm do painel (admin.html) via dados.js.
+   Para editar sem o painel, altere DEFAULT_DATA em dados.js.
    ===================================================================== */
-const CATEGORIES = ['Burgers', 'Executivos', 'Árabes', 'Porções'];
+const DATA = BatalDB.load();
+const BUSINESS = DATA.business;
+const DISHES = DATA.dishes.filter(d => d.active !== false && d.options && d.options.length);
+const CATEGORIES = DATA.categories.filter(c => DISHES.some(d => d.cat === c));
 
-const DISHES = [
-  {
-    id: 'burger', cat: 'Burgers', name: 'Batal Burger',
-    title: ['Suculento', 'em cada mordida'],
-    desc: 'Pão brioche selado na manteiga, blend bovino grelhado, cebola roxa, tomate, alface americana e molho especial da casa.',
-    tagline: ['Feito na brasa,', 'servido com vontade'],
-    img: 'pratos/hamburguer.png',
-    colors: ['#ffb24a', '#ff7417', '#9c3300'],
-    optLabel: 'Escolha o peso do blend:',
-    options: [ { label: '120g', price: 29.9 }, { label: '160g', price: 34.9 }, { label: '200g', price: 39.9 } ],
-  },
-  {
-    id: 'executivo', cat: 'Executivos', name: 'Executivo à Milanesa',
-    title: ['Almoço de', 'verdade'],
-    desc: 'Bife empanado e crocante com molho rústico, batata frita sequinha, salada de alface com tomate e um toque de limão.',
-    tagline: ['Prato cheio,', 'sabor de casa'],
-    img: 'pratos/executivo.png',
-    colors: ['#8be09b', '#2f9e52', '#0b3a1f'],
-    optLabel: 'Escolha a porção:',
-    options: [ { label: '1p', price: 32.9 }, { label: '2p', price: 59.9 }, { label: '3p', price: 84.9 } ],
-  },
-  {
-    id: 'beirute', cat: 'Árabes', name: 'Beirute Tradicional',
-    title: ['Crocante por fora,', 'derretendo por dentro'],
-    desc: 'Pão sírio tostado, recheio de carne temperada com especiarias árabes, queijo derretido e ervas frescas.',
-    tagline: ['Tradição árabe', 'em cada fatia'],
-    img: 'pratos/beirute.png',
-    colors: ['#ffd56b', '#e39b12', '#6e3600'],
-    optLabel: 'Escolha o tamanho:',
-    options: [ { label: 'M', price: 36.9 }, { label: 'G', price: 44.9 }, { label: 'GG', price: 54.9 } ],
-  },
-  {
-    id: 'shawarma', cat: 'Árabes', name: 'Shawarma Batal',
-    title: ['Enrolado', 'na hora'],
-    desc: 'Pão folha tostado na chapa, recheio temperado à moda árabe e folhas de hortelã fresca. Servido quentinho no papel.',
-    tagline: ['Quentinho,', 'do jeito certo'],
-    img: 'pratos/shawarma.png',
-    colors: ['#ff8a9b', '#d11f58', '#4a0420'],
-    optLabel: 'Escolha o recheio:',
-    options: [ { label: 'Frango', price: 26.9 }, { label: 'Carne', price: 29.9 }, { label: 'Misto', price: 31.9 } ],
-  },
-  {
-    id: 'porcao', cat: 'Porções', name: 'Porção da Casa',
-    title: ['Feita para', 'compartilhar'],
-    desc: 'Descrição provisória — adicione aqui os ingredientes da porção. Coloque a foto em pratos/porcao.png.',
-    tagline: ['Pra dividir', '(ou não)'],
-    img: 'pratos/porcao.png',
-    colors: ['#c9a6ff', '#7c3aed', '#2a0d63'],
-    optLabel: 'Serve quantas pessoas:',
-    options: [ { label: '2', price: 39.9 }, { label: '4', price: 69.9 }, { label: '6', price: 94.9 } ],
-  },
-];
-
-/* ===================================================================== */
 const $ = s => document.querySelector(s);
 const BRL = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const oldOf = p => Math.ceil(p * 1.28) - 0.1;          // preço "de" fictício
+const oldOf = opt => BatalDB.oldPrice(opt);             // preço "de" riscado
 const pad = n => String(n).padStart(2, '0');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -302,7 +214,7 @@ function placeholder(d) {
     <circle cx='300' cy='198' r='15' fill='${c}'/>
     <path d='M214 300 a92 92 0 0 1 52 -64' stroke='#fff' stroke-opacity='.55' stroke-width='11' fill='none' stroke-linecap='round'/>
     <text x='300' y='402' text-anchor='middle' font-family='Montserrat,Arial,sans-serif' font-weight='800' font-size='30' fill='${c}'>${esc(d.name)}</text>
-    <text x='300' y='436' text-anchor='middle' font-family='Arial,sans-serif' font-size='17' fill='#000' fill-opacity='.45'>adicione ${esc(d.img)}</text>
+    <text x='300' y='436' text-anchor='middle' font-family='Arial,sans-serif' font-size='17' fill='#000' fill-opacity='.45'>${String(d.img || '').startsWith('data:') || !d.img ? 'adicione a foto no painel' : 'adicione ' + esc(d.img)}</text>
   </svg>`;
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg).replace(/'/g, '%27');
 }
@@ -374,8 +286,8 @@ function buildOptions(animate) {
   if (animate) gsap.fromTo(optionsEl.children, { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: .7, stagger: .07, ease: 'back.out(2)', delay: .35 });
 }
 function renderPrice() { priceEl.textContent = BRL(priceState.v); oldEl.textContent = BRL(priceState.o); }
-function tweenPrice(p) {
-  gsap.to(priceState, { v: p, o: oldOf(p), duration: .7, ease: 'power3.out', onUpdate: renderPrice });
+function tweenPrice(opt) {
+  gsap.to(priceState, { v: opt.price, o: oldOf(opt), duration: .7, ease: 'power3.out', onUpdate: renderPrice });
 }
 function selectOption(i, btn) {
   if (i === optIndex) return;
@@ -383,7 +295,7 @@ function selectOption(i, btn) {
   optionsEl.querySelectorAll('.opt').forEach((b, j) => b.classList.toggle('active', j === i));
   gsap.fromTo(btn, { scale: .82 }, { scale: 1, duration: .6, ease: 'elastic.out(1.2,0.4)' });
   gsap.fromTo(priceEl, { y: -6 }, { y: 0, duration: .5, ease: 'back.out(3)' });
-  tweenPrice(DISHES[index].options[i].price);
+  tweenPrice(DISHES[index].options[i]);
 }
 
 /* ---------- Miniatura do próximo ---------- */
@@ -416,7 +328,7 @@ function initialRender() {
   setRootColors(d, true);
   optIndex = 0;
   buildOptions(false);
-  priceState.v = d.options[0].price; priceState.o = oldOf(priceState.v); renderPrice();
+  priceState.v = d.options[0].price; priceState.o = oldOf(d.options[0]); renderPrice();
   setThumb(false);
   updateCatNav(true);
 }
@@ -470,7 +382,7 @@ function goTo(target, dir) {
   tl.to([priceEl, oldEl], { yPercent: -110, duration: .32, ease: 'power2.in', stagger: .05 }, 0)
     .call(() => {
       optIndex = 0;
-      priceState.v = d.options[0].price; priceState.o = oldOf(priceState.v); renderPrice();
+      priceState.v = d.options[0].price; priceState.o = oldOf(d.options[0]); renderPrice();
       gsap.fromTo([priceEl, oldEl], { yPercent: 110 }, { yPercent: 0, duration: .8, ease: 'power4.out', stagger: .07 });
       buildOptions(true);
     }, null, .34);
@@ -602,7 +514,16 @@ bagBtn.onclick = openBag;
 $('#bagClose').onclick = closeBag;
 $('#bagOverlay').onclick = closeBag;
 addEventListener('keydown', e => { if (e.key === 'Escape') closeBag(); });
-$('#checkoutBtn').onclick = () => toast(cart.length ? 'Pedido de demonstração — integração em breve' : 'Adicione um prato primeiro');
+$('#checkoutBtn').onclick = () => {
+  if (!cart.length) return toast('Adicione um prato primeiro');
+  const phone = String(BUSINESS.whatsapp || '').replace(/\D/g, '');
+  if (!phone) return toast('Pagamento online — atualização em breve');
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const msg = `Olá! Quero fazer um pedido no ${BUSINESS.name}:\n\n` +
+    cart.map(i => `• ${i.qty}x ${i.d.name} (${i.label}) — ${BRL(i.price * i.qty)}`).join('\n') +
+    `\n\nTotal: ${BRL(total)}`;
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+};
 
 let toastTl;
 function toast(msg) {
@@ -613,77 +534,6 @@ function toast(msg) {
     .fromTo(t, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .4, ease: 'back.out(2)' })
     .to(t, { opacity: 0, y: 10, duration: .3 }, '+=2');
 }
-
-/* ---------- Seção cardápio ---------- */
-const grid = $('#menuGrid'), filters = $('#filters');
-let activeFilter = 'Todos';
-function buildFilters() {
-  ['Todos', ...CATEGORIES].forEach(c => {
-    const b = document.createElement('button');
-    b.textContent = c;
-    b.className = 'filter px-4 py-2 rounded-full text-sm font-semibold border border-white/15 transition-colors';
-    b.onclick = () => { activeFilter = c; paintFilters(); filterGrid(); };
-    filters.appendChild(b);
-  });
-  paintFilters();
-}
-function paintFilters() {
-  filters.querySelectorAll('.filter').forEach(b => {
-    const on = b.textContent === activeFilter;
-    b.classList.toggle('bg-white', on); b.classList.toggle('text-stone-900', on);
-    b.classList.toggle('text-white/80', !on); b.classList.toggle('hover:bg-white/10', !on);
-  });
-}
-function buildGrid() {
-  DISHES.forEach((d, i) => {
-    const card = document.createElement('button');
-    card.className = 'menu-card group text-left relative rounded-[1.75rem] overflow-hidden p-5 pt-4 min-h-[340px] flex flex-col';
-    card.dataset.cat = d.cat;
-    card.style.background = `radial-gradient(120% 90% at 50% 35%, ${d.colors[0]} 0%, ${d.colors[1]} 45%, ${d.colors[2]} 100%)`;
-    card.innerHTML = `
-      <span class="self-start glass rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider">${d.cat}</span>
-      <div class="relative flex-1 my-3 grid place-items-center"><div class="card-img relative w-44 h-44"></div></div>
-      <p class="font-display font-bold text-lg leading-tight">${d.name}</p>
-      <div class="flex items-center justify-between mt-1">
-        <span class="text-sm text-white/85">a partir de <b class="font-display">${BRL(d.options[0].price)}</b></span>
-        <span class="w-9 h-9 rounded-full bg-white text-stone-900 grid place-items-center transition-transform group-hover:translate-x-1">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        </span>
-      </div>`;
-    const im = makeImg(d, 'w-full h-full object-contain drop-shadow-[0_18px_18px_rgba(0,0,0,.35)]');
-    card.querySelector('.card-img').appendChild(im);
-    card.onclick = () => {
-      scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-      setTimeout(() => goTo(i, i > index ? 1 : -1), reduced ? 0 : 450);
-    };
-    grid.appendChild(card);
-  });
-}
-function filterGrid() {
-  const cards = [...grid.children];
-  const show = cards.filter(c => activeFilter === 'Todos' || c.dataset.cat === activeFilter);
-  cards.forEach(c => { c.style.display = show.includes(c) ? '' : 'none'; });
-  gsap.fromTo(show, { y: 30, opacity: 0, scale: .96 }, { y: 0, opacity: 1, scale: 1, duration: .6, stagger: .06, ease: 'power3.out' });
-}
-
-/* ---------- Seção sobre: números do cardápio ---------- */
-function buildStats() {
-  $('#catStats').innerHTML = CATEGORIES.map(c => {
-    const n = DISHES.filter(d => d.cat === c).length;
-    const d = DISHES.find(x => x.cat === c);
-    return `<div class="rounded-2xl p-5 border border-white/10" style="background:linear-gradient(140deg, ${d ? d.colors[1] : '#444'}33, transparent)">
-      <p class="font-display font-extrabold text-3xl">${pad(n)}</p>
-      <p class="text-sm text-white/65 mt-1">${c}</p></div>`;
-  }).join('');
-}
-
-/* ---------- Revelar ao rolar ---------- */
-const io = new IntersectionObserver(entries => entries.forEach(en => {
-  if (!en.isIntersecting) return;
-  gsap.fromTo(en.target, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: .9, ease: 'power3.out' });
-  if (en.target.id === 'menuGrid') filterGrid();
-  io.unobserve(en.target);
-}), { threshold: .15 });
 
 /* ---------- Intro ---------- */
 function intro() {
@@ -701,17 +551,17 @@ function intro() {
 }
 
 /* ---------- Boot ---------- */
-initialRender();
-buildFilters();
-buildGrid();
-buildStats();
-renderBag();
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-io.observe(grid);
-gsap.set(grid.children, { opacity: 0 });
-addEventListener('resize', () => updateCatNav(true));
-document.fonts && document.fonts.ready.then(() => updateCatNav(true));
-if (!reduced) intro();
+if (!DISHES.length) {
+  document.body.innerHTML = '<div style="min-height:100vh;display:grid;place-items:center;text-align:center;font-family:Montserrat,sans-serif"><div><h1 style="font-size:2rem;font-weight:800">Cardápio em atualização</h1><p style="opacity:.6;margin-top:.5rem">Ative ao menos um prato no painel (admin.html).</p></div></div>';
+} else {
+  initialRender();
+  renderBag();
+  addEventListener("resize", () => updateCatNav(true));
+  document.fonts && document.fonts.ready.then(() => updateCatNav(true));
+  if (!reduced) intro();
+}
+// painel salvou em outra aba → atualiza o site
+addEventListener("storage", e => { if (e.key === BatalDB.KEY) location.reload(); });
 </script>
 </body>
 </html>

@@ -10,11 +10,17 @@ Referência visual: `../Referencias/` (layout estilo "Jacket Masters": prato cen
 ## Estrutura
 ```
 SiteRestaurante/
-├── index.html        # site inteiro (HTML + CSS + JS)
+├── index.html        # site público: só a tela inicial (hero/carrossel)
+├── admin.html        # painel SaaS: login, cardápio, categorias, pedidos, clientes, cupons, pagamentos, config, plano
+├── dados.js          # camada de dados compartilhada (localStorage) + DEFAULT_DATA
 ├── CLAUDE.md         # este arquivo
 └── pratos/           # fotos dos pratos (PNG com fundo transparente, ~1200px quadrado)
 ```
-- Os pratos ficam no array `DISHES` no `<script>` do `index.html` (nome, categoria, título, descrição, cores, opções/preços, `img`).
+- Os pratos vêm de `BatalDB.load()` (dados.js). O painel salva com `BatalDB.save()` e o site recarrega sozinho (evento `storage`).
+- **Para ligar o banco de dados:** trocar só `load()`/`save()` em `dados.js` por chamadas à API.
+- O que ainda é demonstração (marcado com selo "Atualização em breve"): login real, pedidos em tempo real, clientes, pagamento online, cupons no carrinho, cobrança do plano, upload na nuvem.
+- Já funciona de verdade: cadastro/edição/exclusão de pratos, preços, cores, fotos (upload salvo no navegador), ordem do carrossel, categorias, cupons salvos, dados do restaurante, backup JSON, e o botão "Finalizar pedido" do site envia a sacola pelo WhatsApp configurado.
+- O painel deve seguir a mesma tipografia e linguagem visual do hero (Montserrat 800 tracking-tight, DM Sans, pílulas brancas, vidro fosco, degradê radial do prato, molas GSAP).
 - Se a imagem de `pratos/` não existir, o site gera automaticamente um **placeholder SVG** bonito com a cor do prato e o nome do arquivo esperado. Basta salvar a foto com esse nome.
 
 ## Skills / Diretrizes de Engenharia Visual (obrigatórias)

@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batal — Painel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  tailwind.config = { theme: { extend: { fontFamily: {
+    display: ['Montserrat', 'sans-serif'], body: ['"DM Sans"', 'sans-serif'] } } } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="dados.js"></script>
+<style>
+  :root { --c1:#ffb24a; --c2:#ff7417; --c3:#9c3300; }
+  html, body { background:#0c0a09; }
+  body { font-family:'DM Sans',sans-serif; color:#fff; -webkit-font-smoothing:antialiased; }
+  .font-display { font-family:'Montserrat',sans-serif; }
+  .bg-dish { background: radial-gradient(110% 85% at 50% 45%, var(--c1) 0%, var(--c2) 40%, var(--c3) 100%); }
+  .noise { position:absolute; inset:0; pointer-events:none; opacity:.08; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .glass { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22);
+    backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%);
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25); }
+  .panel { background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.08); border-radius:1.5rem; }
+  .app-glow { position:fixed; inset:-20% -10% auto auto; width:70vw; height:70vw; pointer-events:none; z-index:0;
+    background:radial-gradient(closest-side, var(--c2), transparent 70%); opacity:.16; filter:blur(40px); transition: background .8s; }
+
+  @keyframes levitate { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-16px) } }
+  @keyframes floorShadow { 0%,100% { transform:scale(1); opacity:.6 } 50% { transform:scale(.75); opacity:.3 } }
+  .float { animation: levitate 4.2s ease-in-out infinite; }
+  .shadow-blob { animation: floorShadow 4.2s ease-in-out infinite; filter: blur(12px);
+    background: radial-gradient(closest-side, rgba(0,0,0,.75), rgba(0,0,0,.3) 55%, transparent); }
+  .dish-img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 22px 22px rgba(0,0,0,.35)); user-select:none; -webkit-user-drag:none; }
+
+  .field { width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:.9rem;
+    padding:.7rem .9rem; font-size:.9rem; color:#fff; outline:none; transition:border-color .2s, background .2s, box-shadow .2s; }
+  .field:focus { border-color:rgba(255,255,255,.45); background:rgba(255,255,255,.08); box-shadow:0 0 0 4px rgba(255,255,255,.06); }
+  .field::placeholder { color:rgba(255,255,255,.35); }
+  select.field option { background:#1c1917; }
+  .label { display:block; font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-bottom:.45rem; font-family:'Montserrat',sans-serif; }
+
+  .btn { display:inline-flex; align-items:center; gap:.5rem; border-radius:999px; font-weight:600; font-size:.875rem;
+    padding:.65rem 1.15rem; transition: transform .15s, background .2s, gap .2s, opacity .2s; white-space:nowrap; }
+  .btn:active { transform:scale(.95); }
+  .btn-white { background:#fff; color:#1c1917; box-shadow:0 12px 26px -12px rgba(0,0,0,.6); }
+  .btn-white:hover { gap:.8rem; }
+  .btn-ghost { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); }
+  .btn-ghost:hover { background:rgba(255,255,255,.13); }
+  .btn-danger { background:rgba(244,63,94,.14); color:#fda4af; border:1px solid rgba(244,63,94,.3); }
+  .btn-danger:hover { background:rgba(244,63,94,.24); }
+  .btn[disabled] { opacity:.45; pointer-events:none; }
+  .icon-btn { width:2.5rem; height:2.5rem; border-radius:999px; display:grid; place-items:center; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); transition: background .2s, transform .15s; }
+  .icon-btn:hover { background:rgba(255,255,255,.15); }
+  .icon-btn:active { transform:scale(.92); }
+
+  .soon { font-size:.8rem; font-weight:500; color:rgba(255,255,255,.45); white-space:nowrap; }
+  .notice { font-size:.875rem; line-height:1.6; color:rgba(255,255,255,.55); }
+
+  .switch { position:relative; width:44px; height:26px; border-radius:999px; background:rgba(255,255,255,.15); transition: background .25s; flex-shrink:0; }
+  .switch::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition: transform .35s cubic-bezier(.3,1.6,.5,1); box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .switch[aria-pressed="true"] { background:#22c55e; }
+  .switch[aria-pressed="true"]::after { transform:translateX(18px); }
+  .switch[disabled] { opacity:.4; cursor:not-allowed; }
+
+  .nav-item { display:flex; align-items:center; gap:.8rem; padding:.7rem .9rem; border-radius:999px; font-size:.9rem; font-weight:500; color:rgba(255,255,255,.7); transition: color .2s, background .2s; position:relative; z-index:1; }
+  .nav-item:hover { color:#fff; background:rgba(255,255,255,.06); }
+  .nav-item.active { color:#1c1917; font-weight:700; }
+  .nav-item.active:hover { background:transparent; }
+
+  .dish-card { transition: transform .4s cubic-bezier(.2,.9,.25,1.2), box-shadow .3s, opacity .2s; }
+  .dish-card:hover { transform: translateY(-4px); }
+  .dish-card:hover .card-img { transform: translateY(-8px) rotate(-6deg) scale(1.05); }
+  .card-img { transition: transform .6s cubic-bezier(.2,.9,.25,1.3); }
+  .dish-card.dragging { opacity:.35; }
+  .dish-card.drop-target { box-shadow: 0 0 0 2px #fff; }
+  .kanban-col.drop-target { background: rgba(255,255,255,.07); }
+  .order-card.dragging { opacity:.4; }
+
+  .price-input { width:100%; background:transparent; border:1px solid transparent; border-radius:.6rem; padding:.2rem .35rem; font-family:'Montserrat',sans-serif; font-weight:700; font-variant-numeric:tabular-nums; color:#fff; outline:none; transition: border-color .2s, background .2s; }
+  .price-input:hover { border-color:rgba(255,255,255,.15); }
+  .price-input:focus { border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.07); }
+
+  .swatch { width:30px; height:30px; border-radius:50%; border:2px solid rgba(255,255,255,.25); transition: transform .2s; }
+  .swatch:hover { transform: scale(1.15); }
+  input[type="color"] { -webkit-appearance:none; appearance:none; width:100%; height:44px; border:1px solid rgba(255,255,255,.15); border-radius:.9rem; background:transparent; cursor:pointer; padding:4px; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding:0; }
+  input[type="color"]::-webkit-color-swatch { border:none; border-radius:.65rem; }
+
+  .scroll-thin::-webkit-scrollbar { width:8px; height:8px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:8px; }
+  .clip { display:block; overflow:hidden; }
+  ::selection { background: rgba(255,255,255,.3); }
+  @media (prefers-reduced-motion: reduce) { .float, .shadow-blob { animation:none; } }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- =========================== LOGIN / CADASTRO =========================== -->
+<section id="auth" class="hidden fixed inset-0 z-50 bg-dish overflow-y-auto">
+  <div class="noise"></div>
+  <div class="relative min-h-full grid lg:grid-cols-2">
+    <!-- lado da marca -->
+    <div class="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden">
+      <div class="flex items-center gap-2.5">
+        <span class="grid place-items-center w-9 h-9 rounded-lg bg-white text-stone-900 font-display font-black text-lg">B</span>
+        <span class="font-display font-extrabold tracking-[.22em]" data-bizname>BATAL</span>
+        <span class="ml-2 text-[11px] font-bold uppercase tracking-[.2em] text-white/60">Painel</span>
+      </div>
+      <div class="relative flex-1 grid place-items-center">
+        <div class="absolute font-display font-black text-[15vw] leading-none tracking-[-.04em] text-transparent select-none" style="-webkit-text-stroke:2px rgba(255,255,255,.13)" data-bizname>BATAL</div>
+        <div class="relative w-[min(30vw,52vh)] aspect-square" id="authStage">
+          <div class="absolute left-1/2 -translate-x-1/2 -bottom-[10%] w-[75%] h-[12%]"><div class="shadow-blob w-full h-full rounded-[50%]"></div></div>
+          <div class="float absolute inset-0"><div id="authDish" class="relative w-full h-full"></div></div>
+        </div>
+      </div>
+      <div>
+        <h2 class="font-display font-extrabold text-[clamp(2rem,3.2vw,3.4rem)] leading-[1.02] tracking-tight">Seu cardápio,<br>do seu jeito.</h2>
+        <p class="mt-3 text-white/80 max-w-sm">Cadastre pratos, mude preços na hora e veja o site atualizar sozinho.</p>
+      </div>
+    </div>
+
+    <!-- formulário -->
+    <div class="relative flex items-center justify-center p-5 sm:p-10">
+      <div id="authCard" class="glass w-full max-w-md rounded-[2rem] p-7 sm:p-9" style="background:rgba(20,14,10,.38)">
+        <div class="lg:hidden flex items-center gap-2.5 mb-8">
+          <span class="grid place-items-center w-9 h-9 rounded-lg bg-white text-stone-900 font-display font-black text-lg">B</span>
+          <span class="font-display font-extrabold tracking-[.22em]" data-bizname>BATAL</span>
+        </div>
+        <div class="relative flex p-1 rounded-full bg-black/25 mb-7">
+          <span id="authPill" class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white"></span>
+          <button data-auth-tab="login" class="relative z-10 flex-1 py-2 text-sm font-semibold rounded-full transition-colors">Entrar</button>
+          <button data-auth-tab="signup" class="relative z-10 flex-1 py-2 text-sm font-semibold rounded-full transition-colors">Criar conta</button>
+        </div>
+        <h1 id="authTitle" class="font-display font-extrabold text-3xl tracking-tight">Bem-vindo de volta</h1>
+        <p id="authSub" class="text-white/70 text-sm mt-1.5">Entre para gerenciar seu restaurante.</p>
+        <form id="authForm" class="mt-7 space-y-4" autocomplete="off">
+          <div data-signup-only class="hidden"><label class="label">Nome do restaurante</label><input name="restaurant" class="field" placeholder="Ex.: Batal"></div>
+          <div data-signup-only class="hidden"><label class="label">Seu nome</label><input name="name" class="field" placeholder="Como devemos te chamar?"></div>
+          <div><label class="label">E-mail</label><input name="email" type="email" required class="field" placeholder="voce@email.com"></div>
+          <div><label class="label">Senha</label><input name="password" type="password" required minlength="4" class="field" placeholder="••••••••"></div>
+          <button class="btn btn-white w-full justify-center py-3.5 mt-2" type="submit"><span id="authBtnText">Entrar</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          <button type="button" class="btn btn-ghost w-full justify-center py-3" disabled>Entrar com Google</button>
+        </form>
+        <p class="mt-6 text-xs text-white/60 leading-relaxed">Login real com banco de dados chega em breve. Por enquanto você entra no modo demonstração e tudo fica salvo neste navegador. A senha não é guardada.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== APP =========================== -->
+<div id="app" class="hidden relative min-h-screen">
+  <div class="app-glow"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed z-40 inset-y-0 left-0 w-[268px] p-4 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-500 bg-[#0c0a09]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-0 border-r border-white/[.06]">
+    <a href="#dashboard" class="flex items-center gap-2.5 px-3 pt-3 pb-7 group">
+      <span class="grid place-items-center w-9 h-9 rounded-lg bg-white text-stone-900 font-display font-black text-lg transition-transform group-hover:rotate-[-8deg]">B</span>
+      <span class="font-display font-extrabold tracking-[.22em]" data-bizname>BATAL</span>
+      <span class="ml-auto text-[10px] font-bold uppercase tracking-[.2em] text-white/40">Painel</span>
+    </a>
+    <nav id="nav" class="relative flex-1 overflow-y-auto scroll-thin space-y-1">
+      <span id="navPill" class="absolute left-0 right-0 rounded-full bg-white" style="height:0;top:0"></span>
+    </nav>
+    <div class="panel p-4 mt-4">
+      <div class="flex items-center gap-3">
+        <div id="avatar" class="w-10 h-10 rounded-full bg-dish grid place-items-center font-display font-black text-sm"></div>
+        <div class="min-w-0 flex-1">
+          <p id="userName" class="text-sm font-semibold truncate"></p>
+          <p class="text-[11px] text-white/45">Plano Demonstração</p>
+        </div>
+        <button id="logoutBtn" class="icon-btn !w-9 !h-9" title="Sair" aria-label="Sair">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  <div id="sideOverlay" class="fixed inset-0 z-30 bg-black/60 hidden lg:hidden"></div>
+
+  <!-- Conteúdo -->
+  <div class="relative z-10 lg:pl-[268px]">
+    <header class="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-8 py-4 bg-[#0c0a09]/70 backdrop-blur-xl border-b border-white/[.06]">
+      <button id="menuBtn" class="icon-btn lg:hidden" aria-label="Abrir menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <div class="min-w-0">
+        <h1 id="pageTitle" class="font-display font-extrabold text-xl sm:text-2xl tracking-tight truncate"></h1>
+        <p id="pageSub" class="text-xs text-white/50 truncate hidden sm:block"></p>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <div class="relative hidden md:block">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="globalSearch" class="field !rounded-full !py-2.5 !pl-10 w-56 lg:w-72" placeholder="Buscar prato…  ( / )">
+        </div>
+        <span id="savedFlag" class="hidden sm:inline-flex items-center gap-1.5 text-xs text-emerald-300/90 opacity-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Salvo
+        </span>
+        <div class="relative">
+          <button id="bellBtn" class="icon-btn relative" aria-label="Notificações">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500"></span>
+          </button>
+          <div id="bellMenu" class="hidden absolute right-0 mt-3 w-80 panel !bg-[#171412] p-2 shadow-2xl">
+            <p class="px-3 py-2 text-xs font-bold uppercase tracking-[.15em] text-white/45">Notificações</p>
+            <div class="px-3 py-3 rounded-xl hover:bg-white/5"><p class="text-sm font-semibold">Bem-vindo ao painel do Batal 👋</p><p class="text-xs text-white/50 mt-0.5">Comece editando seus pratos no Cardápio.</p></div>
+            <div class="px-3 py-3 rounded-xl hover:bg-white/5"><p class="text-sm font-semibold">Pagamento online</p><p class="text-xs text-white/50 mt-0.5">Pix e cartão direto no site. Chega em breve.</p></div>
+            <div class="px-3 py-3 rounded-xl hover:bg-white/5"><p class="text-sm font-semibold">Banco de dados</p><p class="text-xs text-white/50 mt-0.5">Pedidos e clientes em tempo real. Chega em breve.</p></div>
+          </div>
+        </div>
+        <a href="index.html" target="_blank" class="btn btn-white !py-2.5">
+          <span class="hidden sm:inline">Ver site</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <main id="view" class="px-4 sm:px-8 py-6 sm:py-8 max-w-[1500px]"></main>
+  </div>
+</div>
+
+<!-- Modal genérico -->
+<div id="modalWrap" class="hidden fixed inset-0 z-[60]">
+  <div id="modalBg" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+  <div id="modalBox" class="absolute inset-0 overflow-y-auto scroll-thin flex items-start sm:items-center justify-center p-3 sm:p-6"></div>
+</div>
+
+<div id="toast" class="fixed z-[80] left-1/2 bottom-6 -translate-x-1/2 px-5 py-3 rounded-full bg-white text-stone-900 text-sm font-semibold shadow-2xl opacity-0 pointer-events-none max-w-[92vw] text-center"></div>
+
+<script>
+/* =====================================================================
+   BATAL — Painel (SaaS)
+   Dados: dados.js (localStorage). Login, pedidos, clientes e pagamentos
+   estão em modo demonstração até conectar banco de dados e gateway.
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const BRL = v => (+v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const parseMoney = s => { const n = parseFloat(String(s).replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return isNaN(n) ? 0 : Math.round(n * 100) / 100; };
+const fmtMoneyInput = v => (+v || 0).toFixed(2).replace('.', ',');
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+
+let DATA = BatalDB.load();
+const SESSION_KEY = 'batal:session';
+const ORDERS_KEY = 'batal:demo-orders';
+let session = store.get(SESSION_KEY);
+
+const PRESETS = [
+  ['#ffb24a', '#ff7417', '#9c3300'], ['#8be09b', '#2f9e52', '#0b3a1f'], ['#ffd56b', '#e39b12', '#6e3600'],
+  ['#ff8a9b', '#d11f58', '#4a0420'], ['#c9a6ff', '#7c3aed', '#2a0d63'], ['#7cc8ff', '#1d7fe0', '#0a2a5e'],
+  ['#ff8a6b', '#e2361b', '#5c0d02'], ['#9ff0e0', '#14a38b', '#053d35'], ['#d6d3d1', '#57534e', '#1c1917'],
+];
+
+/* ---------- Ícones ---------- */
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+  cardapio: '<path d="M4 11h16a8 8 0 0 0-16 0z"/><path d="M3 15h18"/><path d="M5 19h14a2 2 0 0 0 2-2H3a2 2 0 0 0 2 2z"/>',
+  categorias: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  pedidos: '<path d="M6 2h12l2 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z"/><path d="M4 6h16M9 10a3 3 0 0 0 6 0"/>',
+  clientes: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/>',
+  cupons: '<path d="M3 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 11v2M13 17v2"/>',
+  pagamentos: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/>',
+  config: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  plano: '<path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>', copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+  grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>', check: '<path d="M20 6L9 17l-5-5"/>', up: '<path d="M18 15l-6-6-6 6"/>', down: '<path d="M6 9l6 6 6-6"/>',
+  right: '<path d="M9 18l6-6-6-6"/>', left: '<path d="M15 18l-6-6 6-6"/>', upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  percent: '<path d="M19 5L5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>', download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  zap: '<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>', db: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>', wa: '<path d="M3.5 20.5l1.3-4A8.5 8.5 0 1 1 8 19.6l-4.5.9z"/>',
+  pix: '<path d="M12 2l4 4-4 4-4-4zM12 14l4 4-4 4-4-4zM2 12l4-4 4 4-4 4zM14 12l4-4 4 4-4 4z"/>', truck: '<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>', clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>', chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/>',
+};
+const icon = (n, s = 18, w = 2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ''}</svg>`;
+const soon = (t = 'Chega em breve') => `<span class="soon">${t}</span>`;
+
+/* ---------- Imagens ---------- */
+function placeholder(d) {
+  const [a, b, c] = d.colors || PRESETS[0];
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'><defs><radialGradient id='p' cx='50%' cy='42%' r='62%'><stop offset='0' stop-color='#fff'/><stop offset='1' stop-color='#e7e1da'/></radialGradient><linearGradient id='k' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${c}'/></linearGradient></defs><circle cx='300' cy='300' r='282' fill='url(#p)'/><circle cx='300' cy='300' r='270' fill='none' stroke='${b}' stroke-width='20'/><path d='M168 338 a132 132 0 0 1 264 0 z' fill='url(#k)'/><rect x='146' y='334' width='308' height='18' rx='9' fill='${c}'/><circle cx='300' cy='198' r='15' fill='${c}'/><text x='300' y='410' text-anchor='middle' font-family='Montserrat,Arial' font-weight='800' font-size='30' fill='${c}'>sem foto</text></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg).replace(/'/g, '%27');
+}
+function imgTag(d, cls = 'dish-img') {
+  return `<img src="${esc(d.img || placeholder(d))}" data-ph="${d.id}" class="${cls}" alt="" draggable="false">`;
+}
+// troca imagens quebradas por placeholder
+document.addEventListener('error', e => {
+  const t = e.target;
+  if (t.tagName === 'IMG' && t.dataset.ph !== undefined && !t.dataset.failed) {
+    t.dataset.failed = 1;
+    const d = DATA.dishes.find(x => x.id === t.dataset.ph) || { colors: PRESETS[0] };
+    t.src = placeholder(d);
+  }
+}, true);
+
+function fileToDataURL(file, max = 700) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = rej;
+    fr.onload = () => {
+      const im = new Image();
+      im.onerror = rej;
+      im.onload = () => {
+        const s = Math.min(1, max / Math.max(im.width, im.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        let url = c.toDataURL('image/webp', .86);
+        if (!url.startsWith('data:image/webp')) url = c.toDataURL('image/png');
+        res(url);
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ---------- Persistência ---------- */
+function persist(msg) {
+  if (!BatalDB.save(DATA)) { toast('Sem espaço no navegador — use fotos menores ou o caminho pratos/arquivo.png'); return false; }
+  const f = $('#savedFlag');
+  gsap.killTweensOf(f);
+  gsap.timeline().fromTo(f, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .3 }).to(f, { opacity: 0, duration: .4 }, '+=1.4');
+  if (msg) toast(msg);
+  applyBrand();
+  return true;
+}
+function applyBrand() {
+  $$('[data-bizname]').forEach(el => el.textContent = (DATA.business.name || 'Batal').toUpperCase());
+  document.title = (DATA.business.name || 'Batal') + ' — Painel';
+}
+function setTheme(colors, instant) {
+  const [c1, c2, c3] = colors;
+  gsap.to(document.documentElement, { '--c1': c1, '--c2': c2, '--c3': c3, duration: instant ? 0 : 1, ease: 'power2.inOut' });
+}
+
+/* ---------- Toast / Modal / Confirm ---------- */
+let toastTl;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg;
+  toastTl && toastTl.kill();
+  toastTl = gsap.timeline().fromTo(t, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .4, ease: 'back.out(2)' }).to(t, { opacity: 0, y: 10, duration: .3 }, '+=2.2');
+}
+function openModal(html, width = 'max-w-lg') {
+  const box = $('#modalBox');
+  box.innerHTML = `<div class="modal-card relative w-full ${width} my-auto panel !bg-[#151210] !rounded-[1.75rem] shadow-2xl">${html}</div>`;
+  $('#modalWrap').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  gsap.fromTo('#modalBg', { opacity: 0 }, { opacity: 1, duration: .3 });
+  gsap.fromTo('.modal-card', { y: 40, scale: .94, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: .7, ease: 'elastic.out(1,0.8)' });
+  return $('.modal-card');
+}
+function closeModal() {
+  if ($('#modalWrap').classList.contains('hidden')) return;
+  gsap.to('.modal-card', { y: 30, opacity: 0, scale: .96, duration: .25, ease: 'power2.in' });
+  gsap.to('#modalBg', { opacity: 0, duration: .3, onComplete: () => { $('#modalWrap').classList.add('hidden'); $('#modalBox').innerHTML = ''; document.body.style.overflow = ''; } });
+}
+$('#modalBg').onclick = closeModal;
+$('#modalBox').addEventListener('mousedown', e => { if (e.target.id === 'modalBox') closeModal(); });
+function confirmBox(text, ok = 'Confirmar', danger = true) {
+  return new Promise(res => {
+    const m = openModal(`<div class="p-7">
+      <h3 class="font-display font-extrabold text-xl">Tem certeza?</h3>
+      <p class="text-white/65 mt-2 text-sm leading-relaxed">${text}</p>
+      <div class="flex justify-end gap-2 mt-7"><button class="btn btn-ghost" data-no>Cancelar</button><button class="btn ${danger ? 'btn-danger' : 'btn-white'}" data-yes>${ok}</button></div></div>`, 'max-w-md');
+    $('[data-no]', m).onclick = () => { closeModal(); res(false); };
+    $('[data-yes]', m).onclick = () => { closeModal(); res(true); };
+  });
+}
+
+/* ---------- Animações utilitárias ---------- */
+// antes de trocar a imagem: remove qualquer imagem antiga que ainda esteja saindo
+// (evita pratos empilhados quando a aba fica em segundo plano ou o usuário clica rápido)
+function swapClean(holder) {
+  const kids = [...holder.children];
+  kids.slice(0, -1).forEach(k => { gsap.killTweensOf(k); k.remove(); });
+  const last = holder.lastElementChild;
+  if (last) { gsap.killTweensOf(last); gsap.set(last, { x: 0, rotation: 0, scale: 1, opacity: 1 }); }
+}
+function countUp(root = document) {
+  $$('[data-count]', root).forEach(el => {
+    const to = +el.dataset.count, fmt = el.dataset.fmt;
+    const o = { v: 0 };
+    const out = () => el.textContent = fmt === 'brl' ? BRL(o.v) : fmt === 'pct' ? o.v.toFixed(1).replace('.', ',') + '%' : Math.round(o.v).toLocaleString('pt-BR');
+    if (reduced) { o.v = to; return out(); }
+    gsap.to(o, { v: to, duration: 1.4, ease: 'power3.out', onUpdate: out });
+  });
+}
+function animateView() {
+  if (reduced) return;
+  gsap.fromTo('#view .anim', { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: .7, stagger: .05, ease: 'power3.out', clearProps: 'transform' });
+}
+
+/* =====================================================================
+   DEMO: pedidos e clientes (fictícios até ter banco de dados)
+   ===================================================================== */
+const DEMO_NAMES = ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa', 'Felipe', 'Gabi', 'Heitor', 'Iara', 'João', 'Karina', 'Lucas', 'Marina', 'Nicolas', 'Olívia', 'Pedro', 'Rafa', 'Sofia', 'Tiago', 'Vitória'];
+const STAGES = [
+  { id: 'novo', label: 'Novos', color: '#38bdf8' },
+  { id: 'preparo', label: 'Em preparo', color: '#fbbf24' },
+  { id: 'pronto', label: 'Prontos', color: '#a78bfa' },
+  { id: 'entregue', label: 'Entregues', color: '#22c55e' },
+];
+function randomOrder(stage = 'novo') {
+  const active = DATA.dishes.filter(d => d.active !== false && d.options?.length);
+  const n = 1 + Math.floor(Math.random() * 3);
+  const items = Array.from({ length: n }, () => {
+    const d = active[Math.floor(Math.random() * active.length)] || DATA.dishes[0];
+    const o = d.options[Math.floor(Math.random() * d.options.length)];
+    return { dishId: d.id, name: d.name, opt: o.label, price: o.price, qty: 1 + (Math.random() < .25 ? 1 : 0) };
+  });
+  return {
+    id: String(1000 + Math.floor(Math.random() * 9000)), customer: DEMO_NAMES[Math.floor(Math.random() * DEMO_NAMES.length)] + ' ' + 'ABCDEFGHLMPRS'[Math.floor(Math.random() * 13)] + '.',
+    channel: Math.random() < .6 ? 'Delivery' : 'Retirada', stage, items, at: Date.now() - Math.floor(Math.random() * 50) * 60000,
+  };
+}
+function getOrders() {
+  let o = store.get(ORDERS_KEY);
+  if (!Array.isArray(o) || !o.length) {
+    o = [...Array(3)].map(() => randomOrder('novo')).concat([...Array(2)].map(() => randomOrder('preparo')), [randomOrder('pronto')], [...Array(3)].map(() => randomOrder('entregue')));
+    store.set(ORDERS_KEY, o);
+  }
+  return o;
+}
+const orderTotal = o => o.items.reduce((s, i) => s + i.price * i.qty, 0);
+const ago = t => { const m = Math.max(1, Math.round((Date.now() - t) / 60000)); return m < 60 ? `${m} min` : `${Math.round(m / 60)} h`; };
+
+/* =====================================================================
+   VIEWS
+   ===================================================================== */
+const VIEWS = {};
+const NAV = [
+  ['dashboard', 'Visão geral', 'Resumo do seu restaurante'],
+  ['cardapio', 'Cardápio', 'Pratos, fotos, cores e preços — tudo aparece no site na hora'],
+  ['categorias', 'Categorias', 'Organize o menu pílula do site'],
+  ['pedidos', 'Pedidos', 'Acompanhe o preparo'],
+  ['clientes', 'Clientes', 'Quem pede com você'],
+  ['cupons', 'Cupons', 'Promoções e descontos'],
+  ['pagamentos', 'Pagamentos', 'Receba online'],
+  ['config', 'Configurações', 'Dados do restaurante, backup e integrações'],
+  ['plano', 'Plano', 'Sua assinatura'],
+];
+const SOON_NAV = new Set(['pagamentos']);
+
+function buildNav() {
+  const nav = $('#nav');
+  nav.insertAdjacentHTML('beforeend', NAV.map(([id, label], i) =>
+    `${i === 7 ? '<p class="px-4 pt-5 pb-2 text-[10px] font-bold uppercase tracking-[.2em] text-white/30">Conta</p>' : ''}
+     <a href="#${id}" class="nav-item" data-nav="${id}">${icon(id, 18)}<span>${label}</span>${SOON_NAV.has(id) ? '<span class="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400"></span>' : ''}${id === 'pedidos' ? '<span id="navOrders" class="ml-auto text-xs font-bold tabular-nums opacity-50"></span>' : ''}</a>`).join(''));
+}
+function moveNavPill(id, instant) {
+  const a = $(`[data-nav="${id}"]`);
+  $$('.nav-item').forEach(x => x.classList.toggle('active', x === a));
+  if (!a) return;
+  gsap.to('#navPill', { y: a.offsetTop, height: a.offsetHeight, duration: instant ? 0 : .7, ease: 'elastic.out(1,0.8)' });
+}
+function updateOrdersBadge() {
+  const n = getOrders().filter(o => o.stage === 'novo').length;
+  const b = $('#navOrders'); if (b) { b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
+}
+
+let currentView = null;
+function render() {
+  const id = (location.hash.slice(1).split('?')[0]) || 'dashboard';
+  const v = VIEWS[id] ? id : 'dashboard';
+  const meta = NAV.find(n => n[0] === v);
+  $('#pageTitle').textContent = meta[1];
+  $('#pageSub').textContent = meta[2];
+  $('#view').innerHTML = VIEWS[v].html();
+  VIEWS[v].mount && VIEWS[v].mount();
+  moveNavPill(v, currentView === null);
+  currentView = v;
+  closeSidebar();
+  animateView();
+  window.scrollTo(0, 0);
+}
+addEventListener('hashchange', () => session && render());
+
+/* ---------------------------- VISÃO GERAL ---------------------------- */
+let featured = 0;
+VIEWS.dashboard = {
+  html() {
+    const orders = getOrders();
+    const today = orders.reduce((s, o) => s + orderTotal(o), 0);
+    const active = DATA.dishes.filter(d => d.active !== false);
+    const week = [42, 55, 38, 61, 73, 96, 88].map((v, i) => v * (0.9 + ((i * 37) % 10) / 50));
+    const max = Math.max(...week);
+    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const top = active.slice(0, 4);
+    return `
+    <p class="anim notice mb-6 max-w-3xl">Pedidos, faturamento e clientes abaixo são de exemplo até o banco de dados ser conectado. Cardápio e preços já são reais e salvam no site.</p>
+
+    <div class="anim mb-7">
+      <p class="font-display text-xs font-bold uppercase tracking-[.25em] text-white/45">${greeting()}</p>
+      <h2 class="font-display font-extrabold text-[clamp(1.9rem,3.2vw,3rem)] leading-[1.05] tracking-tight mt-1">Olá, ${esc((session?.name || 'chef').split(' ')[0])}.<br><span class="text-white/45">Bora vender hoje?</span></h2>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+      <!-- Prato em destaque (mini hero) -->
+      <div class="anim xl:col-span-2 relative overflow-hidden rounded-[1.75rem] bg-dish min-h-[340px] p-7 flex flex-col justify-between" id="featCard">
+        <div class="noise"></div>
+        <div class="relative z-10 flex items-center justify-between">
+          <span class="font-display text-[11px] font-bold uppercase tracking-[.25em] text-white/80">Destaque do site</span>
+          <div class="flex gap-2">
+            <button class="glass w-10 h-10 rounded-full grid place-items-center hover:bg-white hover:text-stone-900 transition-colors" data-feat="-1">${icon('left', 16, 2.4)}</button>
+            <button class="glass w-10 h-10 rounded-full grid place-items-center hover:bg-white hover:text-stone-900 transition-colors" data-feat="1">${icon('right', 16, 2.4)}</button>
+          </div>
+        </div>
+        <div class="relative z-10 mt-4 max-w-[54%]">
+          <div id="featText"></div>
+          <div id="featPrice" class="mt-4"></div>
+        </div>
+        <div class="absolute right-[4%] top-[55%] -translate-y-1/2 w-[42%] max-w-[300px] aspect-square pointer-events-none">
+          <div class="absolute left-1/2 -translate-x-1/2 -bottom-[10%] w-[75%] h-[12%]"><div class="shadow-blob w-full h-full rounded-[50%]"></div></div>
+          <div class="float absolute inset-0"><div id="featDish" class="relative w-full h-full"></div></div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 gap-4">
+        ${kpi('Pedidos hoje', orders.length, 'int', 'pedidos', '+12%')}
+        ${kpi('Faturamento', today, 'brl', 'chart', '+8%')}
+        ${kpi('Ticket médio', orders.length ? today / orders.length : 0, 'brl', 'percent', '+3%')}
+        ${kpi('Pratos ativos', active.length, 'int', 'cardapio', 'real', true)}
+      </div>
+
+      <!-- Gráfico -->
+      <div class="anim panel p-6 xl:col-span-2">
+        <div class="flex items-center justify-between mb-6">
+          <div><p class="label !mb-1">Vendas da semana</p><p class="font-display font-extrabold text-2xl" data-count="${week.reduce((a, b) => a + b, 0) * 31}" data-fmt="brl">R$ 0</p></div>
+          ${soon('Exemplo')}
+        </div>
+        <svg viewBox="0 0 700 220" class="w-full h-56" preserveAspectRatio="none">
+          <defs><linearGradient id="bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--c1)"/><stop offset="1" stop-color="var(--c3)"/></linearGradient></defs>
+          ${[0, 1, 2, 3].map(i => `<line x1="0" x2="700" y1="${20 + i * 55}" y2="${20 + i * 55}" stroke="rgba(255,255,255,.06)"/>`).join('')}
+          ${week.map((v, i) => { const h = v / max * 170; const x = 30 + i * 96; return `<rect class="bar" x="${x}" y="${185 - h}" width="56" height="${h}" rx="14" fill="url(#bar)"/><text x="${x + 28}" y="212" text-anchor="middle" fill="rgba(255,255,255,.45)" font-size="13" font-family="DM Sans">${days[i]}</text>`; }).join('')}
+        </svg>
+      </div>
+
+      <!-- Mais vendidos -->
+      <div class="anim panel p-6">
+        <div class="flex items-center justify-between mb-4"><p class="label !mb-0">Mais pedidos</p><a href="#cardapio" class="text-xs text-white/50 hover:text-white">Ver cardápio →</a></div>
+        <div class="space-y-3">
+          ${top.map((d, i) => `<div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl relative shrink-0" style="background:radial-gradient(circle,${d.colors[0]},${d.colors[2]})">${imgTag(d, 'absolute inset-1 w-[calc(100%-.5rem)] h-[calc(100%-.5rem)] object-contain')}</div>
+            <div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">${esc(d.name)}</p><div class="h-1.5 rounded-full bg-white/10 mt-1.5 overflow-hidden"><div class="h-full rounded-full bar-h" style="width:${92 - i * 18}%;background:${d.colors[1]}"></div></div></div>
+            <span class="font-display font-bold text-sm tabular-nums">${BRL(d.options[0]?.price)}</span></div>`).join('') || '<p class="text-sm text-white/50">Nenhum prato ativo.</p>'}
+        </div>
+      </div>
+
+      <!-- Pedidos recentes -->
+      <div class="anim panel p-6 xl:col-span-3">
+        <div class="flex items-center justify-between mb-4"><p class="label !mb-0">Pedidos recentes</p><a href="#pedidos" class="text-xs text-white/50 hover:text-white">Abrir quadro →</a></div>
+        <div class="overflow-x-auto scroll-thin"><table class="w-full text-sm min-w-[560px]">
+          <thead><tr class="text-left text-white/40 text-xs uppercase tracking-wider"><th class="pb-3 font-semibold">Pedido</th><th class="pb-3 font-semibold">Cliente</th><th class="pb-3 font-semibold">Itens</th><th class="pb-3 font-semibold">Status</th><th class="pb-3 font-semibold text-right">Total</th></tr></thead>
+          <tbody>${orders.slice().sort((a, b) => b.at - a.at).slice(0, 5).map(o => { const st = STAGES.find(s => s.id === o.stage); return `<tr class="border-t border-white/[.06]">
+            <td class="py-3 font-display font-bold">#${o.id}</td><td class="py-3">${esc(o.customer)}</td><td class="py-3 text-white/60 truncate max-w-[220px]">${o.items.map(i => `${i.qty}x ${esc(i.name)}`).join(', ')}</td>
+            <td class="py-3"><span class="inline-flex items-center gap-2 text-sm text-white/80"><span class="w-2 h-2 rounded-sm" style="background:${st.color}"></span>${st.label}</span></td>
+            <td class="py-3 text-right font-display font-bold tabular-nums">${BRL(orderTotal(o))}</td></tr>`; }).join('')}</tbody></table></div>
+      </div>
+    </div>`;
+  },
+  mount() {
+    renderFeatured(0, true);
+    $$('[data-feat]').forEach(b => b.onclick = () => renderFeatured(+b.dataset.feat));
+    countUp($('#view'));
+    if (!reduced) {
+      gsap.from('.bar', { scaleY: 0, transformOrigin: '50% 100%', duration: 1.2, stagger: .06, ease: 'elastic.out(1,0.7)', delay: .2 });
+      gsap.from('.bar-h', { width: 0, duration: 1.2, stagger: .08, ease: 'power3.out', delay: .3 });
+    }
+  },
+};
+function greeting() { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; }
+function kpi(label, value, fmt, ic, delta, real) {
+  return `<div class="anim panel p-5 flex flex-col justify-between min-h-[150px] relative overflow-hidden">
+    <div class="flex items-center justify-between"><span class="w-10 h-10 rounded-full grid place-items-center bg-white/[.07]">${icon(ic, 18)}</span>
+    <span class="text-[11px] font-bold ${real ? 'text-white/50' : 'text-emerald-300'}">${real ? 'tempo real' : delta}</span></div>
+    <div><p class="font-display font-extrabold text-[clamp(1.15rem,1.55vw,1.7rem)] tabular-nums leading-none mt-4 whitespace-nowrap" data-count="${value}" data-fmt="${fmt}">0</p>
+    <p class="text-xs text-white/50 mt-2">${label}</p></div></div>`;
+}
+function renderFeatured(dir, instant) {
+  const list = DATA.dishes.filter(d => d.active !== false);
+  if (!list.length) return;
+  featured = (featured + dir + list.length) % list.length;
+  const d = list[featured];
+  setTheme(d.colors, instant);
+  const text = `<p class="font-display text-[11px] font-bold uppercase tracking-[.25em] text-white/75 mb-2">${esc(d.cat)} · ${esc(d.name)}</p>
+    <h3 class="font-display font-extrabold text-[clamp(1.6rem,2.6vw,2.6rem)] leading-[1.02] tracking-tight">${(d.title || [d.name]).map(esc).join('<br>')}</h3>`;
+  const price = `<div class="flex items-baseline gap-3"><p class="font-display font-bold text-3xl tabular-nums leading-none">${BRL(d.options[0]?.price)}</p><p class="font-display font-semibold text-white/55 line-through tabular-nums">${BRL(BatalDB.oldPrice(d.options[0] || { price: 0 }))}</p></div>
+    <button class="btn btn-white mt-5" data-edit="${d.id}">Editar prato ${icon('right', 15, 2.6)}</button>`;
+  const holder = $('#featDish');
+  swapClean(holder);
+  const old = holder.lastElementChild;
+  holder.insertAdjacentHTML('beforeend', imgTag(d, 'dish-img absolute inset-0'));
+  const nu = holder.lastElementChild;
+  if (instant || reduced) { old && old.remove(); $('#featText').innerHTML = text; $('#featPrice').innerHTML = price; return; }
+  if (old) gsap.to(old, { x: -dir * 300, rotation: -dir * 50, scale: .5, opacity: 0, duration: .5, ease: 'power3.in', onComplete: () => old.remove() });
+  gsap.fromTo(nu, { x: dir * 300, rotation: dir * 60, scale: .5, opacity: 0 }, { x: 0, rotation: 0, scale: 1, opacity: 1, duration: 1.4, ease: 'elastic.out(1,0.62)', delay: .25 });
+  gsap.to(['#featText', '#featPrice'], { y: -16, opacity: 0, duration: .25, onComplete: () => {
+    $('#featText').innerHTML = text; $('#featPrice').innerHTML = price;
+    gsap.fromTo(['#featText', '#featPrice'], { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: .6, ease: 'power3.out' });
+  } });
+}
+
+/* ---------------------------- CARDÁPIO ---------------------------- */
+let menuFilter = 'Todos', menuQuery = '';
+VIEWS.cardapio = {
+  html() {
+    return `
+    <div class="anim flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+      <div class="flex flex-wrap gap-2" id="catChips"></div>
+      <div class="lg:ml-auto flex flex-wrap gap-2">
+        <div class="relative md:hidden flex-1 min-w-[180px]"><input id="menuSearch" class="field !rounded-full !py-2.5" placeholder="Buscar prato…" value="${esc(menuQuery)}"></div>
+        <button class="btn btn-ghost" id="bulkBtn">${icon('percent', 16)} Reajuste em massa</button>
+        <button class="btn btn-white" id="newDishBtn">${icon('plus', 16, 2.6)} Novo prato</button>
+      </div>
+    </div>
+    <p class="anim text-xs text-white/45 mb-5 flex items-center gap-2">${icon('grip', 14)} Arraste os cards para mudar a ordem do carrossel no site · clique no preço para editar na hora</p>
+    <div id="dishGrid" class="grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5"></div>`;
+  },
+  mount() {
+    renderChips(); renderDishGrid();
+    $('#newDishBtn').onclick = () => openEditor(null);
+    $('#bulkBtn').onclick = openBulk;
+    const ms = $('#menuSearch'); if (ms) ms.oninput = e => { menuQuery = e.target.value; renderDishGrid(); };
+  },
+};
+function renderChips() {
+  const chips = ['Todos', ...DATA.categories];
+  $('#catChips').innerHTML = chips.map(c => {
+    const n = c === 'Todos' ? DATA.dishes.length : DATA.dishes.filter(d => d.cat === c).length;
+    const on = c === menuFilter;
+    return `<button data-chip="${esc(c)}" class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${on ? 'bg-white text-stone-900 border-white' : 'border-white/15 text-white/75 hover:bg-white/10'}">${esc(c)} <span class="${on ? 'text-stone-500' : 'text-white/35'} ml-1">${n}</span></button>`;
+  }).join('');
+  $$('[data-chip]').forEach(b => b.onclick = () => { menuFilter = b.dataset.chip; renderChips(); renderDishGrid(true); });
+}
+function visibleDishes() {
+  const q = menuQuery.trim().toLowerCase();
+  return DATA.dishes.filter(d => (menuFilter === 'Todos' || d.cat === menuFilter) && (!q || (d.name + ' ' + d.cat + ' ' + d.desc).toLowerCase().includes(q)));
+}
+function renderDishGrid(anim) {
+  const grid = $('#dishGrid'); if (!grid) return;
+  const list = visibleDishes();
+  grid.innerHTML = list.map(d => {
+    const on = d.active !== false;
+    return `<div class="dish-card group panel !rounded-[1.75rem] overflow-hidden ${on ? '' : 'opacity-60'}" draggable="true" data-id="${d.id}">
+      <div class="relative h-48 overflow-hidden rounded-t-[1.75rem]" style="background:radial-gradient(120% 90% at 50% 35%, ${d.colors[0]} 0%, ${d.colors[1]} 45%, ${d.colors[2]} 100%)">
+        <div class="noise"></div>
+        <div class="absolute top-3 left-3 flex items-center gap-2">
+          <span class="glass w-8 h-8 rounded-full grid place-items-center cursor-grab active:cursor-grabbing" title="Arrastar">${icon('grip', 15)}</span>
+          <span class="font-display text-[10px] font-bold uppercase tracking-[.22em] text-white/90 drop-shadow">${esc(d.cat)}</span>
+        </div>
+        <div class="absolute top-3 right-3 flex items-center gap-2.5">
+          <span class="font-display text-[10px] font-bold uppercase tracking-[.18em] text-white/90 drop-shadow">${on ? 'No site' : 'Oculto'}</span>
+          <button class="switch" aria-pressed="${on}" data-toggle="${d.id}" aria-label="Mostrar no site"></button>
+        </div>
+        <div class="absolute inset-x-0 bottom-0 top-10 grid place-items-center"><div class="card-img relative w-36 h-36">${imgTag(d)}</div></div>
+      </div>
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0"><h3 class="font-display font-bold text-lg leading-tight truncate">${esc(d.name)}</h3>
+          <p class="text-xs text-white/50 mt-1 line-clamp-2">${esc(d.desc)}</p></div>
+        </div>
+        <p class="label !mt-4 !mb-2">${esc((d.optLabel || 'Opções').replace(/:$/, ''))}</p>
+        <div class="grid grid-cols-3 gap-2">
+          ${d.options.map((o, i) => `<label class="rounded-xl bg-white/[.05] border border-white/[.08] px-2 py-2 block">
+            <span class="block text-[11px] text-white/50 px-1.5 truncate">${esc(o.label)} <span class="text-white/30">· R$</span></span>
+            <input class="price-input text-[15px]" inputmode="decimal" data-price="${d.id}:${i}" value="${fmtMoneyInput(o.price)}" aria-label="Preço ${esc(o.label)}">
+          </label>`).join('')}
+        </div>
+        <div class="flex items-center gap-2 mt-5">
+          <button class="btn btn-white flex-1 justify-center" data-edit="${d.id}">${icon('edit', 15)} Editar</button>
+          <button class="icon-btn" data-dup="${d.id}" title="Duplicar" aria-label="Duplicar">${icon('copy', 16)}</button>
+          <button class="icon-btn hover:!bg-rose-500/25" data-del="${d.id}" title="Excluir" aria-label="Excluir">${icon('trash', 16)}</button>
+        </div>
+      </div></div>`;
+  }).join('') + `<button id="addCard" class="anim-card rounded-[1.75rem] border-2 border-dashed border-white/15 hover:border-white/40 hover:bg-white/[.03] min-h-[420px] grid place-items-center text-white/50 hover:text-white transition-colors">
+      <span class="flex flex-col items-center gap-3"><span class="w-14 h-14 rounded-full bg-white/10 grid place-items-center">${icon('plus', 24, 2.4)}</span><span class="font-display font-bold">Adicionar prato</span></span></button>`;
+  $('#addCard').onclick = () => openEditor(null);
+  bindDishGrid();
+  if (anim && !reduced) gsap.fromTo('#dishGrid > *', { y: 24, opacity: 0, scale: .97 }, { y: 0, opacity: 1, scale: 1, duration: .55, stagger: .05, ease: 'power3.out', clearProps: 'transform' });
+}
+function bindDishGrid() {
+  $$('[data-price]').forEach(inp => {
+    inp.onfocus = () => inp.select();
+    inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
+    inp.onchange = () => {
+      const [id, i] = inp.dataset.price.split(':');
+      const d = DATA.dishes.find(x => x.id === id);
+      const v = parseMoney(inp.value);
+      if (v <= 0) { inp.value = fmtMoneyInput(d.options[i].price); return toast('Preço inválido'); }
+      d.options[i].price = v;
+      if (d.options[i].old && d.options[i].old <= v) delete d.options[i].old;
+      inp.value = fmtMoneyInput(v);
+      persist(`${d.name} (${d.options[i].label}) → ${BRL(v)}`);
+      gsap.fromTo(inp.closest('label'), { scale: .92, backgroundColor: 'rgba(34,197,94,.3)' }, { scale: 1, backgroundColor: 'rgba(255,255,255,.05)', duration: .8, ease: 'elastic.out(1.2,0.5)' });
+    };
+  });
+  $$('[data-toggle]').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const d = DATA.dishes.find(x => x.id === b.dataset.toggle);
+    d.active = d.active === false;
+    persist(d.active ? `${d.name} agora aparece no site` : `${d.name} foi ocultado do site`);
+    renderDishGrid();
+  });
+  $$('[data-dup]').forEach(b => b.onclick = () => {
+    const i = DATA.dishes.findIndex(x => x.id === b.dataset.dup);
+    const c = clone(DATA.dishes[i]); c.id = uid(); c.name += ' (cópia)'; c.active = false;
+    DATA.dishes.splice(i + 1, 0, c);
+    persist('Prato duplicado (oculto até você ativar)'); renderChips(); renderDishGrid();
+  });
+  $$('[data-del]').forEach(b => b.onclick = async () => {
+    const d = DATA.dishes.find(x => x.id === b.dataset.del);
+    if (!(await confirmBox(`Excluir <b>${esc(d.name)}</b>? Ele some do site e do cardápio.`, 'Excluir prato'))) return;
+    const card = b.closest('.dish-card');
+    gsap.to(card, { scale: .8, opacity: 0, rotation: -4, duration: .35, ease: 'power2.in', onComplete: () => {
+      DATA.dishes = DATA.dishes.filter(x => x !== d);
+      persist('Prato excluído'); renderChips(); renderDishGrid();
+    } });
+  });
+  // arrastar para reordenar
+  let dragId = null;
+  $$('.dish-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      if (e.target.closest('input')) { e.preventDefault(); return; }
+      dragId = card.dataset.id; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', dragId); } catch (_) {}
+    });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); $$('.drop-target').forEach(x => x.classList.remove('drop-target')); });
+    card.addEventListener('dragover', e => { if (!dragId || dragId === card.dataset.id) return; e.preventDefault(); card.classList.add('drop-target'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drop-target'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      const from = DATA.dishes.findIndex(x => x.id === dragId);
+      const [item] = DATA.dishes.splice(from, 1);
+      let to = DATA.dishes.findIndex(x => x.id === card.dataset.id);
+      if (from <= to) to++;
+      DATA.dishes.splice(to, 0, item);
+      dragId = null;
+      persist('Ordem do carrossel atualizada'); renderDishGrid();
+      const moved = $(`.dish-card[data-id="${item.id}"]`);
+      moved && gsap.fromTo(moved, { scale: 1.06 }, { scale: 1, duration: .8, ease: 'elastic.out(1,0.5)', clearProps: 'transform' });
+    });
+  });
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-edit]'); if (b) openEditor(b.dataset.edit); });
+
+/* ---------- Editor de prato (com prévia ao vivo) ---------- */
+function openEditor(id) {
+  const isNew = !id;
+  const base = isNew ? {
+    id: uid(), active: true, cat: DATA.categories[0] || 'Geral', name: '', title: ['', ''], desc: '', tagline: ['', ''], img: '',
+    colors: PRESETS[(DATA.dishes.length) % PRESETS.length].slice(), optLabel: 'Escolha o tamanho:',
+    options: [{ label: 'P', price: 0 }, { label: 'M', price: 0 }, { label: 'G', price: 0 }],
+  } : DATA.dishes.find(d => d.id === id);
+  if (!base) return;
+  const draft = clone(base);
+  draft.title = [draft.title?.[0] || '', draft.title?.[1] || ''];
+  draft.tagline = [draft.tagline?.[0] || '', draft.tagline?.[1] || ''];
+
+  const m = openModal(`
+  <div class="grid lg:grid-cols-[1fr_minmax(0,460px)]">
+    <form id="edForm" class="p-6 sm:p-8 space-y-6 order-2 lg:order-1" autocomplete="off">
+      <div class="flex items-center justify-between">
+        <div><p class="label !mb-1">${isNew ? 'Novo prato' : 'Editar prato'}</p><h3 class="font-display font-extrabold text-2xl tracking-tight" id="edHead">${esc(draft.name) || 'Sem nome'}</h3></div>
+        <button type="button" class="icon-btn" data-close aria-label="Fechar">${icon('x', 16, 2.4)}</button>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div><label class="label">Nome do prato</label><input class="field" name="name" value="${esc(draft.name)}" placeholder="Ex.: Batal Burger" required></div>
+        <div><label class="label">Categoria</label><select class="field" name="cat">${DATA.categories.map(c => `<option ${c === draft.cat ? 'selected' : ''}>${esc(c)}</option>`).join('')}<option value="__new">+ Nova categoria…</option></select></div>
+      </div>
+
+      <div><label class="label">Título grande (2 linhas)</label>
+        <div class="grid sm:grid-cols-2 gap-3"><input class="field" name="t0" value="${esc(draft.title[0])}" placeholder="Suculento"><input class="field" name="t1" value="${esc(draft.title[1])}" placeholder="em cada mordida"></div></div>
+
+      <div><label class="label">Descrição / ingredientes</label><textarea class="field min-h-[90px]" name="desc" maxlength="220" placeholder="Pão brioche, blend…">${esc(draft.desc)}</textarea>
+        <p class="text-[11px] text-white/35 mt-1 text-right"><span id="descCount">${draft.desc.length}</span>/220</p></div>
+
+      <div><label class="label">Frase do rodapé (2 linhas)</label>
+        <div class="grid sm:grid-cols-2 gap-3"><input class="field" name="g0" value="${esc(draft.tagline[0])}" placeholder="Feito na brasa,"><input class="field" name="g1" value="${esc(draft.tagline[1])}" placeholder="servido com vontade"></div></div>
+
+      <div><label class="label">Foto (PNG com fundo transparente fica perfeito)</label>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <label class="btn btn-ghost cursor-pointer justify-center">${icon('upload', 16)} Enviar foto<input type="file" accept="image/*" class="hidden" id="edFile"></label>
+          <input class="field flex-1" name="img" value="${esc(String(draft.img).startsWith('data:') ? '' : draft.img)}" placeholder="${String(draft.img).startsWith('data:') ? 'Foto enviada ✓ (ou digite pratos/arquivo.png)' : 'pratos/arquivo.png'}">
+        </div>
+        <p class="text-[11px] text-white/35 mt-1.5">A foto enviada fica salva neste navegador. Upload para a nuvem — atualização em breve.</p></div>
+
+      <div><label class="label">Cores do fundo</label>
+        <div class="flex flex-wrap gap-2 mb-3">${PRESETS.map((p, i) => `<button type="button" class="swatch" data-preset="${i}" style="background:radial-gradient(circle at 35% 35%, ${p[0]}, ${p[1]} 50%, ${p[2]})" aria-label="Paleta ${i + 1}"></button>`).join('')}</div>
+        <div class="grid grid-cols-3 gap-3">${['Claro', 'Médio', 'Escuro'].map((l, i) => `<div><span class="text-[11px] text-white/45">${l}</span><input type="color" name="c${i}" value="${draft.colors[i]}"></div>`).join('')}</div></div>
+
+      <div>
+        <div class="flex items-end justify-between gap-3 mb-2"><label class="label !mb-0">Opções e preços</label>
+          <input class="field !py-1.5 !text-xs max-w-[220px]" name="optLabel" value="${esc(draft.optLabel)}" placeholder="Escolha o tamanho:"></div>
+        <div id="edOpts" class="space-y-2"></div>
+        <button type="button" class="btn btn-ghost mt-3 !py-2 text-xs" id="addOpt">${icon('plus', 14, 2.6)} Adicionar opção</button>
+        <p class="text-[11px] text-white/35 mt-2">"Preço de" é o valor riscado. Se deixar vazio, o site calcula um automaticamente.</p>
+      </div>
+
+      <div class="flex items-center justify-between rounded-2xl bg-white/[.04] border border-white/[.08] p-4">
+        <div><p class="font-semibold text-sm">Mostrar no site</p><p class="text-xs text-white/45">Desligue para esconder sem apagar.</p></div>
+        <button type="button" class="switch" id="edActive" aria-pressed="${draft.active !== false}"></button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-4 sticky bottom-0 bg-[#151210] pb-2 border-t border-white/10 -mx-6 sm:-mx-8 px-6 sm:px-8 z-10">
+        ${isNew ? '' : `<button type="button" class="btn btn-danger" id="edDelete">${icon('trash', 15)} Excluir</button>`}
+        <button type="button" class="btn btn-ghost ml-auto" data-close>Cancelar</button>
+        <button type="submit" class="btn btn-white">${icon('check', 15, 2.6)} ${isNew ? 'Criar prato' : 'Salvar alterações'}</button>
+      </div>
+    </form>
+
+    <!-- prévia ao vivo -->
+    <div class="order-1 lg:order-2 p-3 lg:pl-0 lg:py-3 lg:pr-3">
+      <div id="pv" class="lg:sticky lg:top-3 relative overflow-hidden rounded-[1.5rem] h-[380px] lg:h-[calc(100vh-4.5rem)] lg:max-h-[760px] p-6 flex flex-col" style="transition:background .6s">
+        <div class="noise"></div>
+        <div class="relative z-10 flex items-center justify-between">
+          <span class="flex items-center gap-2"><span class="grid place-items-center w-7 h-7 rounded-md bg-white text-stone-900 font-display font-black text-sm">B</span><span class="font-display font-extrabold tracking-[.22em] text-xs" data-bizname>BATAL</span></span>
+          <span class="font-display text-[10px] font-bold uppercase tracking-[.22em] text-white/80">Prévia ao vivo</span>
+        </div>
+        <div class="relative z-10 flex-1 grid place-items-center">
+          <div class="relative w-[58%] max-w-[240px] aspect-square" id="pvStage">
+            <div class="absolute left-1/2 -translate-x-1/2 -bottom-[10%] w-[75%] h-[12%]"><div class="shadow-blob w-full h-full rounded-[50%]"></div></div>
+            <div class="float absolute inset-0"><img id="pvImg" class="dish-img" alt=""></div>
+          </div>
+        </div>
+        <div class="relative z-10 flex items-end justify-between gap-4">
+          <div class="min-w-0">
+            <p id="pvKicker" class="font-display text-[10px] font-bold uppercase tracking-[.25em] text-white/75 mb-1.5 truncate"></p>
+            <h4 id="pvTitle" class="font-display font-extrabold text-[clamp(1.4rem,2.2vw,2rem)] leading-[1.02] tracking-tight"></h4>
+          </div>
+          <div class="text-right shrink-0">
+            <p id="pvPrice" class="font-display font-bold text-2xl tabular-nums leading-none"></p>
+            <p id="pvOld" class="font-display font-semibold text-sm text-white/55 line-through mt-1 tabular-nums"></p>
+            <div id="pvOpts" class="flex gap-1.5 justify-end mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`, 'max-w-6xl');
+  applyBrand();
+
+  const f = $('#edForm', m);
+  let pvSel = 0;
+  const renderOpts = () => {
+    $('#edOpts', m).innerHTML = draft.options.map((o, i) => `
+      <div class="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center" data-opt="${i}">
+        <input class="field !py-2.5" data-k="label" value="${esc(o.label)}" placeholder="Nome (ex.: 160g)" maxlength="8">
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/40">R$</span><input class="field !py-2.5 !pl-9" data-k="price" inputmode="decimal" value="${o.price ? fmtMoneyInput(o.price) : ''}" placeholder="Preço"></div>
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/40">De</span><input class="field !py-2.5 !pl-9" data-k="old" inputmode="decimal" value="${o.old ? fmtMoneyInput(o.old) : ''}" placeholder="auto"></div>
+        <button type="button" class="icon-btn !w-10 !h-10 ${draft.options.length < 2 ? 'opacity-30 pointer-events-none' : ''}" data-rm="${i}" aria-label="Remover opção">${icon('x', 14, 2.4)}</button>
+      </div>`).join('');
+    $('#addOpt', m).style.display = draft.options.length >= 4 ? 'none' : '';
+    $$('[data-opt] input', m).forEach(inp => inp.oninput = () => {
+      const i = +inp.closest('[data-opt]').dataset.opt, k = inp.dataset.k;
+      if (k === 'label') draft.options[i].label = inp.value;
+      else { const v = parseMoney(inp.value); if (k === 'old' && !inp.value.trim()) delete draft.options[i].old; else draft.options[i][k] = v; }
+      pvSel = i; preview();
+    });
+    $$('[data-rm]', m).forEach(b => b.onclick = () => { draft.options.splice(+b.dataset.rm, 1); pvSel = 0; renderOpts(); preview(); });
+  };
+  const preview = () => {
+    const [c1, c2, c3] = draft.colors;
+    $('#pv', m).style.background = `radial-gradient(110% 85% at 50% 45%, ${c1} 0%, ${c2} 40%, ${c3} 100%)`;
+    const img = $('#pvImg', m);
+    const src = draft.img || placeholder(draft);
+    if (img.getAttribute('src') !== src) { img.dataset.ph = draft.id; delete img.dataset.failed; img.src = src; }
+    $('#pvKicker', m).textContent = `${draft.cat} · ${draft.name || 'Nome do prato'}`;
+    $('#pvTitle', m).innerHTML = [draft.title[0] || 'Título', draft.title[1]].filter(Boolean).map(esc).join('<br>');
+    const o = draft.options[pvSel] || draft.options[0] || { price: 0 };
+    $('#pvPrice', m).textContent = BRL(o.price);
+    $('#pvOld', m).textContent = BRL(BatalDB.oldPrice(o));
+    $('#pvOpts', m).innerHTML = draft.options.map((x, i) => `<button type="button" data-pv="${i}" class="w-9 h-9 rounded-full border text-[10px] font-bold transition ${i === pvSel ? 'bg-white text-stone-900 border-white' : 'border-white/35 bg-white/10'}">${esc(x.label || '?')}</button>`).join('');
+    $$('[data-pv]', m).forEach(b => b.onclick = () => { pvSel = +b.dataset.pv; preview(); gsap.fromTo('#pvPrice', { y: -6 }, { y: 0, duration: .5, ease: 'back.out(3)' }); });
+    $('#edHead', m).textContent = draft.name || 'Sem nome';
+  };
+
+  f.addEventListener('input', e => {
+    const n = e.target.name; if (!n) return;
+    const v = e.target.value;
+    if (n === 'name') draft.name = v;
+    if (n === 't0') draft.title[0] = v; if (n === 't1') draft.title[1] = v;
+    if (n === 'g0') draft.tagline[0] = v; if (n === 'g1') draft.tagline[1] = v;
+    if (n === 'desc') { draft.desc = v; $('#descCount', m).textContent = v.length; }
+    if (n === 'optLabel') draft.optLabel = v;
+    if (n === 'img') draft.img = v.trim() || (String(base.img).startsWith('data:') ? base.img : '');
+    if (/^c[0-2]$/.test(n)) draft.colors[+n[1]] = v;
+    preview();
+  });
+  $('[name="cat"]', m).onchange = e => {
+    if (e.target.value !== '__new') { draft.cat = e.target.value; return preview(); }
+    const name = (prompt('Nome da nova categoria:') || '').trim();
+    if (name && !DATA.categories.includes(name)) { DATA.categories.push(name); persist(`Categoria "${name}" criada`); }
+    const sel = e.target;
+    sel.innerHTML = DATA.categories.map(c => `<option>${esc(c)}</option>`).join('') + '<option value="__new">+ Nova categoria…</option>';
+    sel.value = name || draft.cat; draft.cat = sel.value; preview();
+  };
+  $$('[data-preset]', m).forEach(b => b.onclick = () => {
+    draft.colors = PRESETS[+b.dataset.preset].slice();
+    ['c0', 'c1', 'c2'].forEach((n, i) => $(`[name="${n}"]`, m).value = draft.colors[i]);
+    preview();
+    gsap.fromTo(b, { scale: .7 }, { scale: 1, duration: .6, ease: 'elastic.out(1.2,0.4)' });
+  });
+  $('#edFile', m).onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      draft.img = await fileToDataURL(file);
+      $('[name="img"]', m).value = ''; $('[name="img"]', m).placeholder = 'Foto enviada ✓';
+      preview();
+      gsap.fromTo('#pvImg', { scale: .4, rotation: -30, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 1.2, ease: 'elastic.out(1,0.6)' });
+    } catch (_) { toast('Não consegui ler essa imagem'); }
+  };
+  $('#addOpt', m).onclick = () => { draft.options.push({ label: '', price: 0 }); renderOpts(); $$('[data-opt] input', m).slice(-3)[0].focus(); };
+  $('#edActive', m).onclick = e => { draft.active = !(draft.active !== false); e.currentTarget.setAttribute('aria-pressed', draft.active); };
+  $$('[data-close]', m).forEach(b => b.onclick = closeModal);
+  const del = $('#edDelete', m);
+  if (del) del.onclick = async () => {
+    if (!(await confirmBox(`Excluir <b>${esc(base.name)}</b>?`, 'Excluir prato'))) return;
+    DATA.dishes = DATA.dishes.filter(x => x.id !== base.id); persist('Prato excluído'); render();
+  };
+  f.onsubmit = e => {
+    e.preventDefault();
+    draft.name = draft.name.trim();
+    if (!draft.name) return toast('Dê um nome ao prato');
+    draft.options = draft.options.filter(o => o.label.trim());
+    if (!draft.options.length) return toast('Adicione pelo menos uma opção');
+    if (draft.options.some(o => !(o.price > 0))) return toast('Preencha o preço de todas as opções');
+    draft.options.forEach(o => { o.label = o.label.trim(); if (o.old && o.old <= o.price) delete o.old; });
+    draft.title = draft.title.map(s => s.trim()).filter(Boolean); if (!draft.title.length) draft.title = [draft.name];
+    draft.tagline = draft.tagline.map(s => s.trim()).filter(Boolean);
+    if (!draft.optLabel.trim()) draft.optLabel = 'Escolha:';
+    if (isNew) DATA.dishes.push(draft); else Object.assign(base, draft);
+    if (!persist(isNew ? `${draft.name} criado!` : 'Alterações salvas — o site já atualizou')) return;
+    closeModal();
+    setTimeout(render, 260);
+  };
+  renderOpts(); preview();
+  gsap.from('#pvStage', { scale: .5, rotation: -25, opacity: 0, duration: 1.3, ease: 'elastic.out(1,0.6)', delay: .15 });
+}
+
+/* ---------- Reajuste em massa ---------- */
+function openBulk() {
+  const m = openModal(`<form class="p-7" id="bulkForm">
+    <div class="flex items-center justify-between mb-1"><h3 class="font-display font-extrabold text-xl">Reajuste em massa</h3><button type="button" class="icon-btn" data-close>${icon('x', 16, 2.4)}</button></div>
+    <p class="text-sm text-white/55 mb-6">Aumente ou reduza todos os preços de uma vez.</p>
+    <div class="grid grid-cols-2 gap-4">
+      <div><label class="label">Percentual</label><div class="relative"><input class="field !pr-9" name="pct" inputmode="decimal" value="10"><span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40">%</span></div></div>
+      <div><label class="label">Aplicar em</label><select class="field" name="cat"><option>Todas</option>${DATA.categories.map(c => `<option>${esc(c)}</option>`).join('')}</select></div>
+    </div>
+    <div class="flex gap-2 mt-4"><button type="button" class="btn btn-ghost flex-1 justify-center" data-sign="1">Aumentar</button><button type="button" class="btn btn-ghost flex-1 justify-center" data-sign="-1">Reduzir</button></div>
+    <label class="flex items-center gap-3 mt-5 text-sm text-white/75"><input type="checkbox" name="round" checked class="w-4 h-4 accent-white"> Arredondar para ,90</label>
+    <div class="mt-5 rounded-2xl bg-white/[.04] p-4 text-sm" id="bulkPreview"></div>
+    <div class="flex justify-end gap-2 mt-6"><button type="button" class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-white">Aplicar reajuste</button></div>
+  </form>`);
+  let sign = 1;
+  const calc = (p, pct, round) => { let v = p * (1 + sign * pct / 100); if (round) v = Math.max(0.9, Math.floor(v) + 0.9); return Math.round(v * 100) / 100; };
+  const pv = () => {
+    const pct = parseMoney($('[name="pct"]', m).value), cat = $('[name="cat"]', m).value, round = $('[name="round"]', m).checked;
+    const list = DATA.dishes.filter(d => cat === 'Todas' || d.cat === cat);
+    $$('[data-sign]', m).forEach(b => { const on = +b.dataset.sign === sign; b.classList.toggle('btn-white', on); b.classList.toggle('btn-ghost', !on); });
+    $('#bulkPreview', m).innerHTML = `<p class="label !mb-2">Prévia (${list.length} pratos)</p>` + list.slice(0, 4).map(d => `<div class="flex justify-between py-1"><span class="text-white/70 truncate">${esc(d.name)} · ${esc(d.options[0].label)}</span><span class="tabular-nums"><span class="text-white/40 line-through mr-2">${BRL(d.options[0].price)}</span><b>${BRL(calc(d.options[0].price, pct, round))}</b></span></div>`).join('') + (list.length > 4 ? `<p class="text-white/40 text-xs mt-1">+ ${list.length - 4} pratos</p>` : '');
+  };
+  $$('[data-sign]', m).forEach(b => b.onclick = () => { sign = +b.dataset.sign; pv(); });
+  $('#bulkForm', m).oninput = pv; $('#bulkForm', m).onchange = pv;
+  $$('[data-close]', m).forEach(b => b.onclick = closeModal);
+  $('#bulkForm', m).onsubmit = e => {
+    e.preventDefault();
+    const pct = parseMoney($('[name="pct"]', m).value), cat = $('[name="cat"]', m).value, round = $('[name="round"]', m).checked;
+    if (!pct) return toast('Informe um percentual');
+    DATA.dishes.filter(d => cat === 'Todas' || d.cat === cat).forEach(d => d.options.forEach(o => { o.price = calc(o.price, pct, round); if (o.old && o.old <= o.price) delete o.old; }));
+    persist(`Preços ${sign > 0 ? 'aumentados' : 'reduzidos'} em ${String(pct).replace('.', ',')}%`); closeModal(); setTimeout(render, 260);
+  };
+  pv();
+}
+
+/* ---------------------------- CATEGORIAS ---------------------------- */
+VIEWS.categorias = {
+  html() {
+    return `<div class="grid lg:grid-cols-[1fr_360px] gap-5 items-start">
+      <div class="anim panel p-3 sm:p-4" id="catList"></div>
+      <div class="anim panel p-6 lg:sticky lg:top-24">
+        <h3 class="font-display font-extrabold text-lg">Nova categoria</h3>
+        <p class="text-sm text-white/50 mt-1 mb-5">Ela aparece no menu pílula do topo do site assim que tiver um prato ativo.</p>
+        <form id="catForm" class="flex gap-2"><input class="field" name="c" placeholder="Ex.: Bebidas" maxlength="20" required><button class="btn btn-white">${icon('plus', 16, 2.6)}</button></form>
+      </div></div>`;
+  },
+  mount() {
+    const draw = () => {
+      $('#catList').innerHTML = DATA.categories.map((c, i) => {
+        const dishes = DATA.dishes.filter(d => d.cat === c);
+        const col = dishes[0]?.colors || ['#444', '#333', '#222'];
+        return `<div class="cat-row flex items-center gap-3 sm:gap-4 p-3 rounded-2xl hover:bg-white/[.03]" data-i="${i}">
+          <div class="flex flex-col"><button class="text-white/40 hover:text-white disabled:opacity-20" data-up ${i === 0 ? 'disabled' : ''}>${icon('up', 16, 2.4)}</button><button class="text-white/40 hover:text-white disabled:opacity-20" data-down ${i === DATA.categories.length - 1 ? 'disabled' : ''}>${icon('down', 16, 2.4)}</button></div>
+          <div class="w-12 h-12 rounded-2xl shrink-0 grid place-items-center font-display font-black" style="background:radial-gradient(circle at 35% 35%, ${col[0]}, ${col[1]} 55%, ${col[2]})">${pad(dishes.length)}</div>
+          <input class="field !bg-transparent !border-transparent hover:!border-white/15 focus:!border-white/40 font-display font-bold !text-base" value="${esc(c)}" data-rename maxlength="20">
+          <div class="hidden md:flex -space-x-3">${dishes.slice(0, 4).map(d => `<div class="w-9 h-9 rounded-full border-2 border-[#0c0a09] relative" style="background:${d.colors[1]}">${imgTag(d, 'absolute inset-0.5 w-[calc(100%-4px)] h-[calc(100%-4px)] object-contain')}</div>`).join('')}</div>
+          <button class="icon-btn hover:!bg-rose-500/25 shrink-0" data-rm aria-label="Excluir categoria">${icon('trash', 15)}</button>
+        </div>`;
+      }).join('') || '<p class="p-6 text-white/50">Nenhuma categoria ainda.</p>';
+      $$('.cat-row').forEach(row => {
+        const i = +row.dataset.i, c = DATA.categories[i];
+        const swap = j => { [DATA.categories[i], DATA.categories[j]] = [DATA.categories[j], DATA.categories[i]]; persist('Ordem do menu atualizada'); draw(); };
+        $('[data-up]', row).onclick = () => swap(i - 1);
+        $('[data-down]', row).onclick = () => swap(i + 1);
+        $('[data-rename]', row).onchange = e => {
+          const n = e.target.value.trim();
+          if (!n || (n !== c && DATA.categories.includes(n))) { e.target.value = c; return toast('Nome inválido ou repetido'); }
+          DATA.categories[i] = n; DATA.dishes.forEach(d => { if (d.cat === c) d.cat = n; });
+          if (menuFilter === c) menuFilter = n;
+          persist(`Renomeada para "${n}"`);
+        };
+        $('[data-rm]', row).onclick = async () => {
+          const n = DATA.dishes.filter(d => d.cat === c).length;
+          if (n) return toast(`Mova ou exclua os ${n} prato(s) de "${c}" primeiro`);
+          if (!(await confirmBox(`Excluir a categoria <b>${esc(c)}</b>?`, 'Excluir'))) return;
+          DATA.categories.splice(i, 1); persist('Categoria excluída'); draw();
+        };
+      });
+    };
+    draw();
+    $('#catForm').onsubmit = e => {
+      e.preventDefault();
+      const n = e.target.c.value.trim();
+      if (!n) return;
+      if (DATA.categories.includes(n)) return toast('Essa categoria já existe');
+      DATA.categories.push(n); persist(`Categoria "${n}" criada`); e.target.reset(); draw();
+      const last = $('#catList').lastElementChild; last && gsap.from(last, { x: -30, opacity: 0, duration: .6, ease: 'back.out(2)' });
+    };
+  },
+};
+const pad = n => String(n).padStart(2, '0');
+
+/* ---------------------------- PEDIDOS (kanban) ---------------------------- */
+VIEWS.pedidos = {
+  html() {
+    return `<div class="anim mb-6 flex flex-wrap items-center gap-4">
+      <p class="notice flex-1 min-w-[240px]">Pedidos do site chegando aqui em tempo real dependem do banco de dados, que chega em breve. Hoje o site envia o pedido pelo WhatsApp configurado. Os cards abaixo são de exemplo.</p>
+      <button class="btn btn-white" id="simBtn">${icon('zap', 15)} Simular pedido</button>
+    </div>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4" id="kanban">
+      ${STAGES.map(s => `<div class="anim kanban-col panel !rounded-[1.5rem] p-3 min-h-[420px] transition-colors" data-stage="${s.id}">
+        <div class="flex items-center gap-2 px-2 py-2 mb-2"><span class="w-2.5 h-2.5 rounded-full" style="background:${s.color}"></span><h3 class="font-display font-bold text-sm">${s.label}</h3><span class="ml-auto text-xs text-white/40 font-bold" data-n></span></div>
+        <div class="space-y-3 min-h-[100px]" data-list></div></div>`).join('')}
+    </div>`;
+  },
+  mount() {
+    drawKanban();
+    $('#simBtn').onclick = () => {
+      const o = getOrders(); const n = randomOrder('novo'); n.at = Date.now(); o.push(n); store.set(ORDERS_KEY, o);
+      drawKanban(); updateOrdersBadge(); toast(`Novo pedido #${n.id} de ${n.customer}`);
+      const card = $(`.order-card[data-id="${n.id}"]`); card && gsap.from(card, { y: -40, scale: .8, opacity: 0, duration: .9, ease: 'elastic.out(1,0.6)' });
+    };
+    $$('.kanban-col').forEach(col => {
+      col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drop-target'); });
+      col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) col.classList.remove('drop-target'); });
+      col.addEventListener('drop', e => {
+        e.preventDefault(); col.classList.remove('drop-target');
+        const id = e.dataTransfer.getData('text/plain'); moveOrder(id, col.dataset.stage);
+      });
+    });
+  },
+};
+function moveOrder(id, stage) {
+  const o = getOrders(); const it = o.find(x => x.id === id); if (!it || it.stage === stage) return;
+  it.stage = stage; store.set(ORDERS_KEY, o); drawKanban(); updateOrdersBadge();
+  const card = $(`.order-card[data-id="${id}"]`); card && gsap.fromTo(card, { scale: .85, opacity: .3 }, { scale: 1, opacity: 1, duration: .7, ease: 'elastic.out(1,0.6)' });
+}
+function drawKanban() {
+  const orders = getOrders();
+  STAGES.forEach((s, si) => {
+    const col = $(`.kanban-col[data-stage="${s.id}"]`); if (!col) return;
+    const list = orders.filter(o => o.stage === s.id).sort((a, b) => b.at - a.at);
+    $('[data-n]', col).textContent = list.length;
+    $('[data-list]', col).innerHTML = list.map(o => `<div class="order-card rounded-2xl bg-white/[.05] border border-white/[.08] p-4 cursor-grab active:cursor-grabbing hover:bg-white/[.08] transition-colors" draggable="true" data-id="${o.id}">
+      <div class="flex items-center justify-between"><span class="font-display font-extrabold">#${o.id}</span><span class="text-[11px] text-white/45 flex items-center gap-1">${icon('clock', 12)} ${ago(o.at)}</span></div>
+      <p class="text-sm mt-1">${esc(o.customer)} <span class="text-white/40"> · ${o.channel}</span></p>
+      <ul class="text-xs text-white/55 mt-2 space-y-0.5">${o.items.map(i => `<li>${i.qty}x ${esc(i.name)} <span class="text-white/35">(${esc(i.opt)})</span></li>`).join('')}</ul>
+      <div class="flex items-center justify-between mt-3"><span class="font-display font-bold tabular-nums">${BRL(orderTotal(o))}</span>
+      ${si < STAGES.length - 1 ? `<button class="text-xs font-semibold px-3 py-1.5 rounded-full bg-white text-stone-900 hover:scale-105 transition" data-advance="${o.id}" data-to="${STAGES[si + 1].id}">${STAGES[si + 1].label.replace(/s$/, '')} →</button>` : `<span class="text-xs text-emerald-300 flex items-center gap-1">${icon('check', 13, 3)} Concluído</span>`}</div></div>`).join('') || `<p class="text-xs text-white/30 text-center py-8">Arraste pedidos para cá</p>`;
+  });
+  $$('.order-card').forEach(c => {
+    c.addEventListener('dragstart', e => { c.classList.add('dragging'); e.dataTransfer.setData('text/plain', c.dataset.id); });
+    c.addEventListener('dragend', () => c.classList.remove('dragging'));
+  });
+  $$('[data-advance]').forEach(b => b.onclick = () => moveOrder(b.dataset.advance, b.dataset.to));
+}
+
+/* ---------------------------- CLIENTES ---------------------------- */
+VIEWS.clientes = {
+  html() {
+    const map = {};
+    getOrders().forEach(o => { const c = map[o.customer] ||= { name: o.customer, n: 0, total: 0, last: 0 }; c.n++; c.total += orderTotal(o); c.last = Math.max(c.last, o.at); });
+    const list = Object.values(map).sort((a, b) => b.total - a.total);
+    return `<p class="anim notice mb-6 max-w-3xl">Cadastro de clientes, histórico e programa de fidelidade chegam com o banco de dados. A lista abaixo é de exemplo.</p>
+    <div class="grid sm:grid-cols-3 gap-4 mb-5">
+      ${[['Clientes', list.length, 'int'], ['Recorrentes', list.filter(c => c.n > 1).length, 'int'], ['Gasto médio', list.length ? list.reduce((s, c) => s + c.total, 0) / list.length : 0, 'brl']].map(([l, v, f]) => `<div class="anim panel p-5"><p class="text-xs text-white/50">${l}</p><p class="font-display font-extrabold text-2xl mt-2 tabular-nums" data-count="${v}" data-fmt="${f}">0</p></div>`).join('')}
+    </div>
+    <div class="anim panel p-2 sm:p-4 overflow-x-auto scroll-thin"><table class="w-full text-sm min-w-[520px]">
+      <thead><tr class="text-left text-white/40 text-xs uppercase tracking-wider"><th class="p-3 font-semibold">Cliente</th><th class="p-3 font-semibold">Pedidos</th><th class="p-3 font-semibold">Último</th><th class="p-3 font-semibold text-right">Total gasto</th></tr></thead>
+      <tbody>${list.map((c, i) => `<tr class="border-t border-white/[.06]"><td class="p-3"><span class="inline-flex items-center gap-3"><span class="w-8 h-8 rounded-full grid place-items-center text-xs font-bold" style="background:${PRESETS[i % PRESETS.length][1]}">${esc(c.name[0])}</span>${esc(c.name)}</span></td><td class="p-3">${c.n}</td><td class="p-3 text-white/55">há ${ago(c.last)}</td><td class="p-3 text-right font-display font-bold tabular-nums">${BRL(c.total)}</td></tr>`).join('')}</tbody></table></div>`;
+  },
+  mount() { countUp($('#view')); },
+};
+
+/* ---------------------------- CUPONS ---------------------------- */
+VIEWS.cupons = {
+  html() {
+    return `<p class="anim notice mb-6 max-w-3xl">Os cupons já ficam salvos. A aplicação automática no carrinho do site chega junto com o pagamento online.</p>
+    <div class="grid lg:grid-cols-[380px_1fr] gap-5 items-start">
+      <form id="cpForm" class="anim panel p-6 space-y-4 lg:sticky lg:top-24">
+        <h3 class="font-display font-extrabold text-lg">Criar cupom</h3>
+        <div><label class="label">Código</label><input class="field uppercase font-display font-bold tracking-widest" name="code" placeholder="BATAL10" maxlength="16" required></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="label">Tipo</label><select class="field" name="type"><option value="pct">% de desconto</option><option value="brl">R$ de desconto</option><option value="frete">Frete grátis</option></select></div>
+          <div><label class="label">Valor</label><input class="field" name="value" inputmode="decimal" placeholder="10"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="label">Pedido mínimo</label><input class="field" name="min" inputmode="decimal" placeholder="0,00"></div>
+          <div><label class="label">Validade</label><input class="field" type="date" name="until"></div>
+        </div>
+        <button class="btn btn-white w-full justify-center">${icon('plus', 16, 2.6)} Criar cupom</button>
+      </form>
+      <div id="cpList" class="grid sm:grid-cols-2 gap-4"></div>
+    </div>`;
+  },
+  mount() {
+    const draw = () => {
+      $('#cpList').innerHTML = DATA.coupons.map((c, i) => {
+        const col = PRESETS[i % PRESETS.length];
+        const val = c.type === 'pct' ? `${String(c.value).replace('.', ',')}% OFF` : c.type === 'brl' ? `${BRL(c.value)} OFF` : 'FRETE GRÁTIS';
+        return `<div class="anim relative overflow-hidden rounded-[1.5rem] p-6 ${c.active ? '' : 'opacity-50'}" style="background:radial-gradient(120% 120% at 0% 0%, ${col[0]}, ${col[1]} 45%, ${col[2]})">
+          <div class="noise"></div>
+          <div class="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0c0a09]"></div><div class="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0c0a09]"></div>
+          <div class="relative flex items-start justify-between"><span class="font-display font-black text-2xl tracking-widest">${esc(c.code)}</span><button class="switch" aria-pressed="${!!c.active}" data-cp-t="${i}"></button></div>
+          <p class="relative font-display font-extrabold text-3xl mt-4">${val}</p>
+          <p class="relative text-xs text-white/80 mt-2">${c.min ? `Pedido mínimo ${BRL(c.min)}` : 'Sem pedido mínimo'} · ${c.until ? 'até ' + new Date(c.until + 'T12:00').toLocaleDateString('pt-BR') : 'sem validade'}</p>
+          <button class="relative mt-4 text-xs font-semibold text-white/80 hover:text-white underline underline-offset-4" data-cp-d="${i}">Excluir</button></div>`;
+      }).join('') || `<div class="anim sm:col-span-2 panel p-10 text-center text-white/50"><div class="w-14 h-14 mx-auto rounded-full bg-white/10 grid place-items-center mb-3">${icon('cupons', 22)}</div>Nenhum cupom ainda. Crie o primeiro ao lado.</div>`;
+      $$('[data-cp-t]').forEach(b => b.onclick = () => { const c = DATA.coupons[+b.dataset.cpT]; c.active = !c.active; persist(c.active ? 'Cupom ativado' : 'Cupom pausado'); draw(); });
+      $$('[data-cp-d]').forEach(b => b.onclick = async () => { if (await confirmBox('Excluir este cupom?', 'Excluir')) { DATA.coupons.splice(+b.dataset.cpD, 1); persist('Cupom excluído'); draw(); } });
+    };
+    draw();
+    $('#cpForm').onsubmit = e => {
+      e.preventDefault(); const f = e.target;
+      const code = f.code.value.trim().toUpperCase().replace(/\s+/g, '');
+      if (DATA.coupons.some(c => c.code === code)) return toast('Esse código já existe');
+      const type = f.type.value, value = parseMoney(f.value.value);
+      if (type !== 'frete' && !(value > 0)) return toast('Informe o valor do desconto');
+      DATA.coupons.unshift({ code, type, value, min: parseMoney(f.min.value), until: f.until.value, active: true });
+      persist(`Cupom ${code} criado`); f.reset(); draw();
+      const first = $('#cpList').firstElementChild; first && gsap.from(first, { scale: .6, rotation: -6, opacity: 0, duration: 1, ease: 'elastic.out(1,0.6)' });
+    };
+  },
+};
+
+/* ---------------------------- PAGAMENTOS ---------------------------- */
+VIEWS.pagamentos = {
+  html() {
+    const hasWa = !!String(DATA.business.whatsapp).replace(/\D/g, '');
+    const methods = [['pix', 'Pix', 'QR Code e copia-e-cola, confirmação automática.'], ['pagamentos', 'Cartão de crédito e débito', 'Pagamento direto no site, com parcelamento.'], ['truck', 'Pagamento na entrega', 'Dinheiro ou maquininha na hora da entrega.'], ['globe', 'Gateway de pagamento', 'Integração com a plataforma de sua escolha.']];
+    return `<div class="anim relative overflow-hidden rounded-[1.75rem] bg-dish p-8 sm:p-10 mb-6">
+      <div class="noise"></div>
+      <div class="relative max-w-xl"><p class="font-display text-xs font-bold uppercase tracking-[.25em] text-white/75">Chega em breve</p>
+        <h2 class="font-display font-extrabold text-[clamp(1.8rem,3vw,2.8rem)] leading-[1.05] tracking-tight mt-4">Pagamento online<br>está chegando.</h2>
+        <p class="text-white/85 mt-3">Assim que o gateway for conectado, seus clientes vão pagar direto pelo site e o pedido cai pago aqui no painel.</p></div>
+      <div class="hidden md:block absolute right-10 top-1/2 -translate-y-1/2 w-56 h-36 rounded-2xl glass rotate-[-8deg] p-5 float"><div class="w-10 h-7 rounded-md bg-amber-200/80"></div><p class="font-display font-bold tracking-[.2em] mt-6 text-sm">•••• •••• •••• 2026</p><p class="text-[10px] uppercase tracking-wider text-white/70 mt-2" data-bizname>BATAL</p></div>
+    </div>
+    <div class="anim panel p-5 mb-6 flex flex-wrap items-center gap-4">
+      <span class="w-11 h-11 rounded-full grid place-items-center ${hasWa ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10'}">${icon('wa', 20)}</span>
+      <div class="flex-1 min-w-[220px]"><p class="font-semibold">Enquanto isso: pedidos pelo WhatsApp</p><p class="text-sm text-white/55">${hasWa ? 'Ativo — ao finalizar a sacola no site, o pedido vai pronto para o seu WhatsApp.' : 'Configure seu número para receber os pedidos do site pelo WhatsApp.'}</p></div>
+      <a href="#config" class="btn ${hasWa ? 'btn-ghost' : 'btn-white'}">${hasWa ? 'Alterar número' : 'Configurar agora'}</a>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      ${methods.map(([ic, t, d]) => `<div class="anim panel p-6 flex items-start gap-4"><span class="w-12 h-12 rounded-2xl bg-white/[.07] grid place-items-center shrink-0">${icon(ic, 22)}</span>
+        <div class="flex-1"><div class="flex items-center justify-between gap-3"><p class="font-display font-bold">${t}</p><button class="switch" disabled aria-pressed="false"></button></div><p class="text-sm text-white/55 mt-1">${d}</p><p class="soon mt-2 block">Chega em breve.</p></div></div>`).join('')}
+    </div>`;
+  },
+};
+
+/* ---------------------------- CONFIGURAÇÕES ---------------------------- */
+VIEWS.config = {
+  html() {
+    const b = DATA.business;
+    return `<div class="grid xl:grid-cols-[1fr_400px] gap-5 items-start">
+      <form id="bizForm" class="anim panel p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between"><h3 class="font-display font-extrabold text-lg">Dados do restaurante</h3>
+          <div class="flex items-center gap-3"><span class="text-sm text-white/60" id="openLbl">${b.open ? 'Aberto agora' : 'Fechado'}</span><button type="button" class="switch" id="openSw" aria-pressed="${!!b.open}"></button></div></div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div><label class="label">Nome</label><input class="field" name="name" value="${esc(b.name)}" required></div>
+          <div><label class="label">Slogan</label><input class="field" name="slogan" value="${esc(b.slogan)}" placeholder="Opcional"></div>
+          <div><label class="label">WhatsApp para pedidos</label><input class="field" name="whatsapp" value="${esc(b.whatsapp)}" placeholder="55 11 99999-9999" inputmode="tel"><p class="text-[11px] text-white/35 mt-1">Com DDI e DDD. Usado no botão "Finalizar pedido" do site.</p></div>
+          <div><label class="label">Instagram</label><input class="field" name="instagram" value="${esc(b.instagram)}" placeholder="@seurestaurante"></div>
+          <div class="sm:col-span-2"><label class="label">Endereço</label><input class="field" name="address" value="${esc(b.address)}" placeholder="Rua, número, bairro, cidade"></div>
+          <div class="sm:col-span-2"><label class="label">Horário de funcionamento</label><input class="field" name="hours" value="${esc(b.hours)}" placeholder="Ex.: Ter a Dom, 11h às 23h"></div>
+          <div><label class="label">Taxa de entrega</label><input class="field" name="deliveryFee" inputmode="decimal" value="${fmtMoneyInput(b.deliveryFee)}"></div>
+          <div><label class="label">Pedido mínimo</label><input class="field" name="minOrder" inputmode="decimal" value="${fmtMoneyInput(b.minOrder)}"></div>
+        </div>
+        <div class="flex justify-end"><button class="btn btn-white">${icon('check', 15, 2.6)} Salvar dados</button></div>
+      </form>
+
+      <div class="space-y-5">
+        <div class="anim panel p-6">
+          <h3 class="font-display font-extrabold text-lg">Backup</h3>
+          <p class="text-sm text-white/50 mt-1 mb-5">Enquanto não há banco de dados, guarde uma cópia do seu cardápio.</p>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-ghost" id="expBtn">${icon('download', 15)} Exportar</button>
+            <label class="btn btn-ghost cursor-pointer">${icon('upload', 15)} Importar<input type="file" accept="application/json" class="hidden" id="impFile"></label>
+            <button class="btn btn-danger" id="resetBtn">Restaurar padrão</button>
+          </div>
+        </div>
+        <div class="anim panel p-6">
+          <h3 class="font-display font-extrabold text-lg mb-4">Integrações</h3>
+          ${[['db', 'Banco de dados', 'Pedidos, clientes e login reais'], ['pagamentos', 'Pagamento online', 'Pix e cartão no site'], ['globe', 'Domínio próprio', 'www.seurestaurante.com.br'], ['bell', 'Alertas de pedido', 'Som e notificação no celular'], ['chart', 'Relatórios', 'Vendas por dia, prato e horário']].map(([ic, t, d]) => `
+            <div class="flex items-center gap-3 py-3 border-t border-white/[.06] first:border-0"><span class="w-10 h-10 rounded-xl bg-white/[.07] grid place-items-center shrink-0">${icon(ic, 18)}</span><div class="flex-1 min-w-0"><p class="text-sm font-semibold">${t}</p><p class="text-xs text-white/45 truncate">${d}</p></div>${soon('Em breve')}</div>`).join('')}
+        </div>
+      </div></div>`;
+  },
+  mount() {
+    const b = DATA.business;
+    $('#openSw').onclick = e => { b.open = !b.open; e.currentTarget.setAttribute('aria-pressed', b.open); $('#openLbl').textContent = b.open ? 'Aberto agora' : 'Fechado'; persist(b.open ? 'Restaurante aberto' : 'Restaurante fechado'); };
+    $('#bizForm').onsubmit = e => {
+      e.preventDefault(); const f = e.target;
+      ['name', 'slogan', 'whatsapp', 'instagram', 'address', 'hours'].forEach(k => b[k] = f[k].value.trim());
+      b.deliveryFee = parseMoney(f.deliveryFee.value); b.minOrder = parseMoney(f.minOrder.value);
+      if (!b.name) b.name = 'Batal';
+      persist('Dados do restaurante salvos');
+    };
+    $('#expBtn').onclick = () => {
+      const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `batal-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000); toast('Backup exportado');
+    };
+    $('#impFile').onchange = async e => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        const d = JSON.parse(await file.text());
+        if (!Array.isArray(d.dishes) || !Array.isArray(d.categories)) throw 0;
+        if (!(await confirmBox('Isso substitui o cardápio atual pelo do arquivo.', 'Importar', false))) return;
+        DATA = Object.assign(BatalDB.reset(), d); persist('Backup importado'); render();
+      } catch (_) { toast('Arquivo inválido'); }
+    };
+    $('#resetBtn').onclick = async () => {
+      if (!(await confirmBox('Todos os pratos, preços, categorias e cupons voltam ao padrão. Exporte um backup antes se quiser guardar.', 'Restaurar'))) return;
+      DATA = BatalDB.reset(); persist('Dados restaurados'); render();
+    };
+  },
+};
+
+/* ---------------------------- PLANO ---------------------------- */
+VIEWS.plano = {
+  html() {
+    const plans = [
+      ['Essencial', 'Para começar', ['Site com carrossel animado', 'Até 20 pratos', 'Pedidos pelo WhatsApp', 'Painel completo'], false],
+      ['Pro', 'O mais escolhido', ['Tudo do Essencial', 'Pratos ilimitados', 'Pagamento online', 'Pedidos em tempo real', 'Cupons no carrinho'], true],
+      ['Rede', 'Várias unidades', ['Tudo do Pro', 'Múltiplas lojas', 'Relatórios avançados', 'Domínio próprio', 'Suporte prioritário'], false],
+    ];
+    return `<div class="anim text-center max-w-xl mx-auto mb-10">
+      <p class="font-display text-xs font-bold uppercase tracking-[.25em] text-white/50">Cobrança chega em breve</p>
+      <h2 class="font-display font-extrabold text-[clamp(1.9rem,3.2vw,3rem)] leading-[1.05] tracking-tight mt-4">Escolha o plano<br>do seu restaurante</h2>
+      <p class="text-white/55 mt-3">Você está no <b class="text-white">modo demonstração</b>, com tudo liberado. Valores definidos no lançamento.</p></div>
+    <div class="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+      ${plans.map(([n, s, f, hot]) => `<div class="anim relative rounded-[1.75rem] p-7 flex flex-col ${hot ? 'bg-dish md:-translate-y-3 shadow-2xl' : 'panel'} overflow-hidden">
+        ${hot ? '<div class="noise"></div><span class="absolute top-8 right-7 font-display text-[10px] font-bold uppercase tracking-[.22em] text-white/85">Mais escolhido</span>' : ''}
+        <p class="relative font-display font-extrabold text-2xl">${n}</p><p class="relative text-sm ${hot ? 'text-white/85' : 'text-white/50'}">${s}</p>
+        <p class="relative font-display font-extrabold text-4xl mt-6">R$ —<span class="text-base font-semibold ${hot ? 'text-white/80' : 'text-white/45'}">/mês</span></p>
+        <ul class="relative space-y-2.5 mt-6 mb-8 text-sm flex-1">${f.map(x => `<li class="flex items-center gap-2.5"><span class="w-5 h-5 rounded-full grid place-items-center ${hot ? 'bg-white text-stone-900' : 'bg-white/10'}">${icon('check', 12, 3)}</span>${x}</li>`).join('')}</ul>
+        <button class="relative btn ${hot ? 'btn-white' : 'btn-ghost'} justify-center" disabled>Assinar — em breve</button></div>`).join('')}
+    </div>`;
+  },
+};
+
+/* =====================================================================
+   AUTENTICAÇÃO (demonstração — sem senha guardada)
+   ===================================================================== */
+let authMode = 'login', authTimer = null, authIdx = 0;
+function showAuth() {
+  $('#app').classList.add('hidden');
+  $('#auth').classList.remove('hidden');
+  setAuthMode('login', true);
+  const list = DATA.dishes.filter(d => d.active !== false);
+  const cycle = (first) => {
+    if (!list.length || (!first && document.hidden)) return;
+    const d = list[authIdx++ % list.length];
+    setTheme(d.colors, first);
+    const h = $('#authDish');
+    swapClean(h);
+    const old = h.lastElementChild;
+    h.insertAdjacentHTML('beforeend', imgTag(d, 'dish-img absolute inset-0'));
+    const nu = h.lastElementChild;
+    if (old) gsap.to(old, { x: -260, rotation: -50, scale: .5, opacity: 0, duration: .55, ease: 'power3.in', onComplete: () => old.remove() });
+    if (!reduced) gsap.fromTo(nu, { x: 260, rotation: 60, scale: .5, opacity: 0 }, { x: 0, rotation: 0, scale: 1, opacity: 1, duration: 1.5, ease: 'elastic.out(1,0.62)', delay: first ? .2 : .3 });
+  };
+  cycle(true);
+  clearInterval(authTimer); authTimer = setInterval(() => cycle(false), 3800);
+  if (!reduced) gsap.from('#authCard', { y: 40, opacity: 0, duration: 1, ease: 'power4.out' });
+}
+function setAuthMode(mode, instant) {
+  authMode = mode;
+  const signup = mode === 'signup';
+  $$('[data-signup-only]').forEach(el => el.classList.toggle('hidden', !signup));
+  $$('[data-auth-tab]').forEach(b => { const on = b.dataset.authTab === mode; b.classList.toggle('text-stone-900', on); b.classList.toggle('text-white/80', !on); });
+  gsap.to('#authPill', { xPercent: signup ? 100 : 0, x: signup ? 0 : 0, duration: instant ? 0 : .6, ease: 'elastic.out(1,0.8)' });
+  $('#authTitle').textContent = signup ? 'Crie sua conta' : 'Bem-vindo de volta';
+  $('#authSub').textContent = signup ? 'Seu restaurante online em minutos.' : 'Entre para gerenciar seu restaurante.';
+  $('#authBtnText').textContent = signup ? 'Criar conta grátis' : 'Entrar';
+  $('[name="restaurant"]').required = signup;
+  if (!instant && !reduced) gsap.fromTo(['#authTitle', '#authSub', '#authForm > *'], { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: .5, stagger: .03, ease: 'power3.out' });
+}
+$$('[data-auth-tab]').forEach(b => b.onclick = () => setAuthMode(b.dataset.authTab));
+$('#authForm').onsubmit = e => {
+  e.preventDefault(); const f = e.target;
+  const email = f.email.value.trim();
+  const name = authMode === 'signup' ? (f.name.value.trim() || email.split('@')[0]) : (store.get('batal:lastName') || email.split('@')[0]);
+  if (authMode === 'signup' && f.restaurant.value.trim()) { DATA.business.name = f.restaurant.value.trim(); BatalDB.save(DATA); }
+  session = { name, email, at: Date.now() };
+  store.set(SESSION_KEY, session); store.set('batal:lastName', name);
+  f.password.value = '';
+  clearInterval(authTimer);
+  gsap.to('#auth', { opacity: 0, duration: .45, onComplete: () => { $('#auth').classList.add('hidden'); $('#auth').style.opacity = ''; startApp(); } });
+};
+$('#logoutBtn').onclick = async () => {
+  if (!(await confirmBox('Sair do painel? Seus pratos continuam salvos.', 'Sair', false))) return;
+  store.del(SESSION_KEY); session = null; currentView = null; showAuth();
+};
+
+/* =====================================================================
+   SHELL
+   ===================================================================== */
+function openSidebar() { $('#sidebar').classList.remove('-translate-x-full'); $('#sideOverlay').classList.remove('hidden'); }
+function closeSidebar() { if (innerWidth < 1024) { $('#sidebar').classList.add('-translate-x-full'); $('#sideOverlay').classList.add('hidden'); } }
+$('#menuBtn').onclick = openSidebar;
+$('#sideOverlay').onclick = closeSidebar;
+$('#bellBtn').onclick = e => { e.stopPropagation(); const m = $('#bellMenu'); m.classList.toggle('hidden'); if (!m.classList.contains('hidden')) gsap.fromTo(m, { y: -8, opacity: 0 }, { y: 0, opacity: 1, duration: .3 }); };
+document.addEventListener('click', e => { if (!e.target.closest('#bellMenu')) $('#bellMenu').classList.add('hidden'); });
+$('#globalSearch').oninput = e => { menuQuery = e.target.value; menuFilter = 'Todos'; if (currentView !== 'cardapio') location.hash = 'cardapio'; else { renderChips(); renderDishGrid(); } };
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); $('#bellMenu').classList.add('hidden'); }
+  if (e.key === '/' && !e.target.closest('input,textarea,select') && session) { e.preventDefault(); $('#globalSearch').focus(); }
+});
+addEventListener('resize', () => currentView && moveNavPill(currentView, true));
+// outra aba alterou os dados
+addEventListener('storage', e => { if (e.key === BatalDB.KEY && session && $('#modalWrap').classList.contains('hidden')) { DATA = BatalDB.load(); render(); } });
+
+let navBuilt = false;
+function startApp() {
+  $('#app').classList.remove('hidden');
+  if (!navBuilt) { buildNav(); navBuilt = true; }
+  $('#userName').textContent = session.name;
+  $('#avatar').textContent = (session.name || '?').slice(0, 2).toUpperCase();
+  applyBrand(); updateOrdersBadge();
+  render();
+  if (!reduced) {
+    gsap.from('#sidebar .nav-item', { x: -20, opacity: 0, duration: .6, stagger: .04, ease: 'power3.out', delay: .1 });
+    gsap.from('header', { y: -20, opacity: 0, duration: .6, ease: 'power3.out' });
+  }
+  document.fonts && document.fonts.ready.then(() => moveNavPill(currentView, true));
+}
+
+applyBrand();
+if (session) startApp(); else showAuth();
+</script>
+</body>
+</html>
